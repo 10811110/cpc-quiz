@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>職安題庫練習</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; padding: 20px; }
+        h1 { text-align: center; color: #1a1a2e; margin-bottom: 4px; }
+        .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 20px; }
+
+        .container { max-width: 720px; margin: 0 auto; }
+
+        /* ===== 共用元件 ===== */
+        .card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 16px; }
+        .start-btn { padding: 14px 40px; border: none; border-radius: 12px; background: #1a73e8; color: white; font-size: 18px; font-weight: 600; cursor: pointer; }
+        .start-btn:hover { background: #1557b0; }
+        .action-btn { padding: 12px 24px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .action-btn.secondary { background: #e8f0fe; color: #1a73e8; }
+        .action-btn.secondary:hover { background: #d0e1fd; }
+        .submit-btn { padding: 10px 24px; border: none; border-radius: 10px; background: #34a853; color: white; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .submit-btn:hover { background: #2d8f47; }
+        .submit-btn:disabled { background: #ccc; cursor: default; }
+
+        /* ===== 起始頁 ===== */
+        .start-screen { text-align: center; padding: 20px 0; }
+        .start-screen p { color: #666; margin: 10px 0 20px; }
+        .mode-select, .count-select { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .mode-btn, .count-btn { padding: 10px 20px; border: 2px solid #e0e0e0; border-radius: 10px; background: white; font-size: 15px; cursor: pointer; }
+        .mode-btn:hover, .count-btn:hover { border-color: #1a73e8; color: #1a73e8; }
+        .mode-btn.active, .count-btn.active { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; font-weight: 600; }
+
+        /* ===== 計時器設定 ===== */
+        .timer-setting { margin-bottom: 20px; text-align: left; display: flex; align-items: center; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .timer-setting label { font-size: 15px; color: #555; }
+        .timer-setting select { padding: 8px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; background: white; cursor: pointer; }
+        .timer-setting select:focus { border-color: #1a73e8; outline: none; }
+
+        /* ===== 答題頁 Header ===== */
+        .quiz-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; background: white; border-radius: 14px; padding: 14px 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
+        .home-btn { padding: 8px 18px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; font-size: 14px; cursor: pointer; color: #666; }
+        .home-btn:hover { border-color: #ea4335; color: #ea4335; }
+        .timer-display { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 80px; text-align: center; }
+        .timer-display.ok { color: #34a853; }
+        .timer-display.warn { color: #f9a825; }
+        .timer-display.danger { color: #ea4335; animation: pulse 0.5s infinite alternate; }
+        @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+        .submit-btn-bar { display: flex; gap: 10px; }
+
+        /* ===== 一次看全部模式 ===== */
+        .progress-bar-wrap { background: #e0e0e0; border-radius: 10px; height: 8px; margin-bottom: 16px; overflow: hidden; }
+        .progress-bar { height: 100%; background: #1a73e8; border-radius: 10px; transition: width 0.3s; width: 0%; }
+        .q-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin-bottom: 14px; }
+        .q-meta { display: flex; justify-content: space-between; font-size: 13px; color: #888; margin-bottom: 10px; }
+        .q-text { font-size: 16px; line-height: 1.6; color: #222; margin-bottom: 14px; }
+        .q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .q-opt { padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 10px; background: white; font-size: 15px; cursor: pointer; transition: all 0.12s; text-align: center; }
+        .q-opt:hover { border-color: #1a73e8; background: #e8f0fe; }
+        .q-opt.selected { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; font-weight: 600; }
+        .q-opt.correct { border-color: #34a853; background: #e6f4ea; color: #34a853; font-weight: 600; }
+        .q-opt.wrong { border-color: #ea4335; background: #fce8e6; color: #ea4335; }
+        .q-opt:disabled { cursor: default; }
+
+        /* ===== 逐題模式 ===== */
+        .one-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .one-header span { font-size: 15px; color: #555; }
+        .one-timer { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .one-timer.ok { color: #34a853; }
+        .one-timer.warn { color: #f9a825; }
+        .one-timer.danger { color: #ea4335; animation: pulse 0.5s infinite alternate; }
+
+        /* ===== 結果頁 ===== */
+        .result { text-align: center; padding: 10px 0; }
+        .score-big { font-size: 80px; font-weight: 800; color: #1a73e8; line-height: 1; }
+        .score-label { font-size: 20px; color: #888; margin-top: 4px; }
+        .result-stat { display: flex; justify-content: space-around; margin: 24px 0; }
+        .stat { text-align: center; }
+        .stat-num { font-size: 32px; font-weight: 700; }
+        .stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+        .stat.ok .stat-num { color: #34a853; }
+        .stat.bad .stat-num { color: #ea4335; }
+        .action-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+        /* ===== 錯題區 ===== */
+        .wrong-section { margin-top: 24px; }
+        .wrong-title { font-size: 16px; font-weight: 700; color: #ea4335; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+        .wrong-card { background: white; border-radius: 14px; padding: 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin-bottom: 12px; border-left: 4px solid #ea4335; }
+        .wrong-q { font-size: 15px; color: #333; margin-bottom: 10px; line-height: 1.5; }
+        .wrong-result { display: flex; gap: 16px; font-size: 14px; flex-wrap: wrap; }
+        .wrong-tag { padding: 4px 12px; border-radius: 6px; font-weight: 600; }
+        .wrong-tag.yours { background: #fce8e6; color: #ea4335; }
+        .wrong-tag.correct { background: #e6f4ea; color: #34a853; }
+
+        /* ===== 時間到提示 ===== */
+        .timeout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .timeout-box { background: white; border-radius: 20px; padding: 40px; text-align: center; max-width: 360px; }
+        .timeout-box h2 { font-size: 24px; color: #ea4335; margin-bottom: 10px; }
+        .timeout-box p { color: #666; margin-bottom: 24px; }
+    </style>
+</head>
+<body>
+
+
+
+
+    <h1>📝 職安題庫練習</h1>
+    <p class="subtitle">一般業職業安全衛生業務主管</p>
+
+    <div class="container">
+
+        <!-- 起始頁 -->
+        <div class="card" id="startScreen">
+            <div class="start-screen">
+                <div style="font-size:48px;">🎯</div>
+                <p>共 683 題，隨機抽取</p>
+
+                <div class="mode-select">
+                    <button class="mode-btn active" data-mode="all">💯 一次看全部，統一繳交</button>
+                    <button class="mode-btn" data-mode="one">➡️ 逐題練習</button>
+                </div>
+
+                <div class="timer-setting">
+                    <label>⏱️ 答題時間：</label>
+                    <select id="timerSelect" style="display:none;">
+                        <option value="0">不限制</option>
+                        <option value="30">30 秒 / 題</option>
+                        <option value="45">45 秒 / 題</option>
+                        <option value="60" selected>60 秒 / 題</option>
+                        <option value="90">90 秒 / 題</option>
+                        <option value="120">120 秒 / 題</option>
+                    </select>
+                    <select id="totalTimerSelect">
+                        <option value="3600">1 小時（總）</option>
+                        <option value="0">不限時</option>
+                    </select>
+                </div>
+
+                <div class="count-select" id="countSelect">
+                    <button class="count-btn" data-count="20">20 題</button>
+                    <button class="count-btn active" data-count="40">40 題</button>
+                    <button class="count-btn" data-count="80">80 題</button>
+                    <button class="count-btn" data-count="100">100 題</button>
+                </div>
+
+                <button class="start-btn" id="startBtn">開始練習</button>
+
+                <div style="display:flex;gap:12px;justify-content:center;margin-top:14px;">
+                    <button class="action-btn secondary" onclick="loadWrongPage()" style="font-size:14px;padding:10px 18px;">📚 錯題列表</button>
+                    <button class="action-btn secondary" onclick="loadFavPage()" style="font-size:14px;padding:10px 18px;">⭐ 收藏題目</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 一次看全部模式 -->
+        <div id="allMode" style="display:none;">
+            <div class="quiz-topbar">
+                <button class="home-btn" onclick="goHome()">🏠 回首頁</button>
+                <div class="timer-display ok" id="totalTimerDisplay">--:--</div>
+                <div class="submit-btn-bar">
+                    <button class="submit-btn" id="submitBtn">📤 提交答案</button>
+                </div>
+            </div>
+            <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+            <div id="questionsList"></div>
+        </div>
+
+        <!-- 逐題模式 -->
+        <div id="oneMode" style="display:none;">
+            <div class="quiz-topbar">
+                <button class="home-btn" onclick="goHome()">🏠 回首頁</button>
+                <select id="qJump" onchange="jumpToQuestion(this.value)" style="padding:6px 10px;border-radius:8px;border:1px solid #ccc;font-size:14px;cursor:pointer;">
+                    <option value="">題目跳轉</option>
+                </select>
+                <div class="one-timer ok" id="oneTimerDisplay">60</div>
+                <button class="submit-btn" id="submitBtnOne" style="background:#888;">✕ 跳過</button>
+            </div>
+            <div class="card">
+                <div class="one-header">
+                    <span id="qNum" style="color:#1a73e8;font-weight:600;">第 1 題</span>
+                    <span id="qProgress" style="color:#888;">0 / 20</span>
+                </div>
+                <div class="q-text" id="qText" style="margin-bottom:20px;"></div>
+                <div class="q-options" id="qOpts"></div>
+                <button class="submit-btn" id="nextBtn" style="display:none;margin-top:16px;width:100%;">下一題 →</button>
+            </div>
+        </div>
+
+        <!-- 結果頁 -->
+        <div class="card" id="resultScreen" style="display:none;">
+            <div class="result">
+                <div class="score-big" id="scoreBig"></div>
+                <div class="score-label">分</div>
+                <div class="result-stat">
+                    <div class="stat ok"><div class="stat-num" id="correctNum"></div><div class="stat-label">答對</div></div>
+                    <div class="stat bad"><div class="stat-num" id="wrongNum"></div><div class="stat-label">答錯</div></div>
+                </div>
+                <div class="action-btns">
+                    <button class="action-btn secondary" onclick="location.reload()">🔄 再練一次</button>
+                    <button class="action-btn secondary" id="reviewWrongBtn">📚 錯題複習</button>
+                    <button class="action-btn secondary" id="reviewFavBtn">⭐ 收藏題目</button>
+                </div>
+            </div>
+            <div class="wrong-section" id="wrongSection" style="display:none;">
+                <div class="wrong-title">❌ 錯題複習</div>
+                <div id="wrongList"></div>
+            </div>
+        </div>
+
+        <!-- 錯題列表頁 -->
+        <div class="card" id="wrongPage" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h2 style="color:#ea4335;">❌ 錯題列表</h2>
+                <button class="submit-btn" onclick="showPage('resultScreen')" style="background:#888;">← 返回</button>
+            </div>
+            <div id="wrongPageList"></div>
+        </div>
+
+        <!-- 收藏頁 -->
+        <div class="card" id="favPage" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h2 style="color:#f9a825;">⭐ 收藏題目</h2>
+                <button class="submit-btn" onclick="showPage('resultScreen')" style="background:#888;">← 返回</button>
+            </div>
+            <div id="favPageList"></div>
+        </div>
+
+    </div>
+
+    <!-- 時間到彈窗 -->
+    <div class="timeout-overlay" id="timeoutOverlay" style="display:none;">
+        <div class="timeout-box">
+            <h2>⏰ 時間到！</h2>
+            <p id="timeoutMsg">即將自動提交</p>
+            <button class="start-btn" onclick="dismissTimeout()">確定</button>
+        </div>
+    </div>
+
+<script>
+const API = 'http://localhost:3000';
+let mode = 'all';
+let quizData = [];
+let currentIdx = 0;
+let userAnswers = {};
+let selectedCount = 40;
+let totalTimerSecs = 3600;  // 統一總秒數（1小時）
+let timerInterval = null;
+let remaining = 0;
+
+// ===== 起始頁 =====
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        mode = btn.dataset.mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+    });
+});
+
+document.querySelectorAll('.count-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        selectedCount = parseInt(btn.dataset.count);
+        document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    });
+});
+
+document.getElementById('startBtn').addEventListener('click', async () => {
+    totalTimerSecs = parseInt(document.getElementById('totalTimerSelect').value);
+
+    const res = await fetch(`${API}/quiz?count=${selectedCount}`);
+    quizData = (await res.json()).questions;
+    currentIdx = 0;
+    userAnswers = {};
+    document.getElementById('startScreen').style.display = 'none';
+
+    if (mode === 'all') {
+        document.getElementById('allMode').style.display = 'block';
+        renderAllQuestions();
+        if (totalTimerSecs > 0) startTotalTimer();
+    } else {
+        document.getElementById('oneMode').style.display = 'block';
+        buildJumpMenu();
+        renderOneQuestion();
+        if (totalTimerSecs > 0) startOneTimer();
+    }
+});
+
+function buildJumpMenu() {
+    const sel = document.getElementById('qJump');
+    sel.innerHTML = '<option value="">題目跳轉</option>';
+    quizData.forEach((q, i) => {
+        const answered = userAnswers[q.id] ? '✓' : '';
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `第 ${i + 1} 題 ${answered}`;
+        sel.appendChild(opt);
+    });
+}
+
+function jumpToQuestion(idx) {
+    if (idx === '') return;
+    const target = parseInt(idx);
+    if (isNaN(target) || target < 0 || target >= quizData.length) return;
+    stopTimer();
+    currentIdx = target;
+    renderOneQuestion();
+    if (totalTimerSecs > 0) startOneTimer();
+}
+
+// ===== 總計時器（一次全部模式）=====
+function startTotalTimer() {
+    remaining = totalTimerSecs;
+    updateTotalTimerDisplay();
+    timerInterval = setInterval(() => {
+        remaining--;
+        updateTotalTimerDisplay();
+        if (remaining <= 0) {
+            clearInterval(timerInterval);
+            showTimeout('時間到！即將自動提交', () => submitAll());
+        }
+    }, 1000);
+}
+
+function updateTotalTimerDisplay() {
+    const el = document.getElementById('totalTimerDisplay');
+    if (!el) return;
+    if (totalTimerSecs === 0) { el.textContent = '∞'; el.className = 'timer-display ok'; return; }
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    el.className = 'timer-display ' + (remaining <= 30 ? 'danger' : remaining <= 60 ? 'warn' : 'ok');
+}
+
+function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+// ===== 統一計時器（逐題 + 全部模式都用總時間）=====
+function startOneTimer() {
+    remaining = totalTimerSecs;
+    updateOneTimerDisplay();
+    timerInterval = setInterval(() => {
+        remaining--;
+        updateOneTimerDisplay();
+        if (remaining <= 0) {
+            clearInterval(timerInterval);
+            showTimeout('時間到！即將自動提交', () => {
+                dismissTimeout();
+                submitOne();
+            });
+        }
+    }, 1000);
+}
+
+function updateOneTimerDisplay() {
+    const el = document.getElementById('oneTimerDisplay');
+    if (!el) return;
+    if (totalTimerSecs === 0) { el.textContent = '∞'; el.className = 'one-timer ok'; return; }
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    el.textContent = m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : s;
+    el.className = 'one-timer ' + (remaining <= 60 ? 'danger' : remaining <= 300 ? 'warn' : 'ok');
+}
+
+function goNextOne() {
+    // 更新跳轉選單：標記當前題目為已跳過
+    const opt = document.querySelector(`#qJump option[value="${currentIdx}"]`);
+    if (opt) opt.textContent = `第 ${currentIdx + 1} 題 ✗`;
+    currentIdx++;
+    if (currentIdx < quizData.length) {
+        renderOneQuestion();
+        if (totalTimerSecs > 0) startOneTimer();
+    } else {
+        stopTimer();
+        submitOne();
+    }
+}
+
+// ===== 時間到提示 =====
+function showTimeout(msg, onOk) {
+    document.getElementById('timeoutMsg').textContent = msg;
+    document.getElementById('timeoutOverlay').style.display = 'flex';
+    document.getElementById('timeoutOverlay').dataset.onOk = onOk;
+}
+function dismissTimeout() {
+    document.getElementById('timeoutOverlay').style.display = 'none';
+    const action = document.getElementById('timeoutOverlay').dataset.onOk;
+    if (action) eval(action);
+}
+
+// ===== 回首頁 =====
+function goHome() {
+    stopTimer();
+    document.getElementById('allMode').style.display = 'none';
+    document.getElementById('oneMode').style.display = 'none';
+    document.getElementById('startScreen').style.display = 'block';
+}
+
+// ===== 一次全部模式 =====
+function renderAllQuestions() {
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').textContent = '📤 提交答案';
+    const list = document.getElementById('questionsList');
+    list.innerHTML = '';
+    updateProgress();
+
+    quizData.forEach((q, i) => {
+        const card = document.createElement('div');
+        card.className = 'q-card';
+        card.innerHTML = `
+            <div class="q-meta"><span>第 ${i + 1} 題</span><span>#${q.id}</span></div>
+            <div class="q-text">${q.question}</div>
+            <div class="q-options">
+                ${['A','B','C','D'].map(k => `
+                    <div class="q-opt" data-qid="${q.id}" data-key="${k}" onclick="selectOption(this, '${q.id}', '${k}')">
+                        ${k}. ${q.options[k]}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function selectOption(el, qid, key) {
+    document.querySelectorAll(`.q-opt[data-qid="${qid}"]`).forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    userAnswers[qid] = key;
+    updateProgress();
+}
+
+function updateProgress() {
+    const answered = Object.keys(userAnswers).length;
+    const pct = (answered / quizData.length * 100).toFixed(1);
+    document.getElementById('progressBar').style.width = pct + '%';
+}
+
+document.getElementById('submitBtn').addEventListener('click', submitAll);
+
+async function submitAll() {
+    stopTimer();
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').textContent = '批改中...';
+    try {
+        const res = await fetch(`${API}/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ answers: userAnswers })
+        });
+        if (!res.ok) throw new Error('伺服器錯誤 ' + res.status);
+        showResult(await res.json());
+    } catch(e) {
+        alert('提交失敗：' + e.message);
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('submitBtn').textContent = '提交答案';
+    }
+}
+
+// ===== 逐題模式 =====
+function renderOneQuestion() {
+    const q = quizData[currentIdx];
+    document.getElementById('qNum').textContent = `第 ${currentIdx + 1} 題`;
+    document.getElementById('qProgress').textContent = `${currentIdx} / ${quizData.length}`;
+    document.getElementById('qText').textContent = q.question;
+    document.getElementById('nextBtn').style.display = 'none';
+    document.getElementById('submitBtnOne').onclick = () => {
+        stopTimer();
+        goNextOne();
+    };
+
+    const opts = document.getElementById('qOpts');
+    opts.innerHTML = '';
+    const alreadyAnswered = userAnswers[q.id];
+    ['A','B','C','D'].forEach(k => {
+        const btn = document.createElement('div');
+        btn.className = 'q-opt';
+        btn.textContent = `${k}. ${q.options[k]}`;
+        btn.dataset.key = k;
+        if (alreadyAnswered) {
+            btn.style.pointerEvents = 'none';
+            if (k === q.answer) btn.classList.add('correct');
+            if (k === alreadyAnswered && k !== q.answer) btn.classList.add('wrong');
+        } else {
+            btn.addEventListener('click', () => handleOneSelect(k, btn));
+        }
+        opts.appendChild(btn);
+    });
+
+    // 更新跳轉選單狀態
+    const sel = document.getElementById('qJump');
+    const curOpt = sel.querySelector(`option[value="${currentIdx}"]`);
+    if (curOpt) sel.selectedIndex = [...sel.options].findIndex(o => o.value == currentIdx);
+}
+
+function handleOneSelect(key, btn) {
+    stopTimer();
+    const q = quizData[currentIdx];
+    document.querySelectorAll('#qOpts .q-opt').forEach(b => b.style.pointerEvents = 'none');
+    btn.classList.add('selected');
+    userAnswers[q.id] = key;
+
+    // 更新跳轉選單中此題狀態
+    const opt = document.querySelector('#qJump option[value="${currentIdx}"]');
+    if (opt) opt.textContent = `第 ${currentIdx + 1} 題 ✓`;
+
+    setTimeout(() => {
+        if (key === q.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            document.querySelector(`#qOpts .q-opt[data-key="${q.answer}"]`).classList.add('correct');
+        }
+        document.getElementById('nextBtn').style.display = 'block';
+        document.getElementById('nextBtn').textContent =
+            currentIdx < quizData.length - 1 ? '下一題 →' : '查看結果';
+    }, 300);
+
+    // 2秒後自動進下一題（使用者也可以直接按按鈕）
+    setTimeout(() => {
+        const nextBtn = document.getElementById('nextBtn');
+        if (nextBtn && nextBtn.style.display !== 'none') {
+            nextBtn.click();
+        }
+    }, 2000);
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+    currentIdx++;
+    if (currentIdx < quizData.length) {
+        renderOneQuestion();
+        if (totalTimerSecs > 0) startOneTimer();
+    } else {
+        submitOne();
+    }
+});
+
+async function submitOne() {
+    document.getElementById('oneMode').style.display = 'none';
+    try {
+        const res = await fetch(`${API}/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ answers: userAnswers })
+        });
+        if (!res.ok) throw new Error('伺服器錯誤 ' + res.status);
+        showResult(await res.json());
+    } catch(e) {
+        alert('提交失敗：' + e.message);
+        document.getElementById('oneMode').style.display = 'block';
+    }
+}
+
+// ===== 顯示結果 =====
+function showResult(data) {
+    document.getElementById('resultScreen').style.display = 'block';
+    document.getElementById('scoreBig').textContent = data.score;
+    document.getElementById('correctNum').textContent = data.correct;
+    document.getElementById('wrongNum').textContent = data.wrongCount;
+
+    if (data.wrongCount > 0) {
+        document.getElementById('wrongSection').style.display = 'block';
+        document.getElementById('wrongList').innerHTML = data.wrong.map(w => `
+            <div class="wrong-card">
+                <div class="wrong-q">${w.question}</div>
+                <div class="wrong-result">
+                    <span class="wrong-tag yours">❌ 你的答案：${w.yourAnswer}</span>
+                    <span class="wrong-tag correct">✅ 正確答案：${w.correctAnswer}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+// ===== 頁面切換 =====
+function showPage(pageId) {
+    ['startScreen','allMode','oneMode','resultScreen','wrongPage','favPage'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
+    document.getElementById(pageId).style.display = 'block';
+}
+
+// ===== 錯題列表頁 =====
+document.getElementById('reviewWrongBtn').addEventListener('click', loadWrongPage);
+
+async function loadWrongPage() {
+    const res = await fetch(`${API}/wrong-questions`);
+    const data = await res.json();
+    if (data.questions.length === 0) {
+        document.getElementById('wrongPageList').innerHTML = '<p style="text-align:center;color:#888;padding:40px;">目前沒有錯題，繼續加油！💪</p>';
+    } else {
+        document.getElementById('wrongPageList').innerHTML = data.questions.map((q, i) => `
+            <div class="q-card">
+                <div class="q-meta"><span>錯題 ${i + 1}</span><span>#${q.id}</span></div>
+                <div class="q-text">${q.question}</div>
+                <div class="q-options">
+                    ${['A','B','C','D'].map(k => `
+                        <div class="q-opt ${k === q.answer ? 'correct' : ''}" style="cursor:default;">${k}. ${q.options[k]}</div>
+                    `).join('')}
+                </div>
+                <div style="margin-top:12px;display:flex;gap:10px;justify-content:flex-end;">
+                    <button class="action-btn secondary" style="font-size:13px;padding:8px 14px;" onclick="addToFav('${q.id}')">⭐ 收藏</button>
+                    <button class="action-btn secondary" style="font-size:13px;padding:8px 14px;border-color:#ea4335;color:#ea4335;" onclick="removeWrong('${q.id}')">✕ 移除</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    showPage('wrongPage');
+}
+
+// ===== 收藏頁 =====
+document.getElementById('reviewFavBtn').addEventListener('click', loadFavPage);
+
+async function loadFavPage() {
+    const res = await fetch(`${API}/favorites`);
+    const data = await res.json();
+    if (data.questions.length === 0) {
+        document.getElementById('favPageList').innerHTML = '<p style="text-align:center;color:#888;padding:40px;">還沒有收藏任何題目</p>';
+    } else {
+        document.getElementById('favPageList').innerHTML = data.questions.map((q, i) => `
+            <div class="q-card">
+                <div class="q-meta"><span>收藏 ${i + 1}</span><span>#${q.id}</span></div>
+                <div class="q-text">${q.question}</div>
+                <div class="q-options">
+                    ${['A','B','C','D'].map(k => `
+                        <div class="q-opt ${k === q.answer ? 'correct' : ''}" style="cursor:default;">${k}. ${q.options[k]}</div>
+                    `).join('')}
+                </div>
+                <div style="margin-top:12px;display:flex;gap:10px;justify-content:flex-end;">
+                    <button class="action-btn secondary" style="font-size:13px;padding:8px 14px;border-color:#ea4335;color:#ea4335;" onclick="removeFav('${q.id}')">✕ 取消收藏</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    showPage('favPage');
+}
+
+async function addToFav(id) {
+    await fetch(`${API}/favorites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question_id: id })
+    });
+    alert('已收藏！');
+}
+async function removeWrong(id) {
+    await fetch(`${API}/wrong-questions/${id}`, { method: 'DELETE' });
+    loadWrongPage();
+}
+async function removeFav(id) {
+    await fetch(`${API}/favorites/${id}`, { method: 'DELETE' });
+    loadFavPage();
+}
+</script>
+</body>
+</html>
