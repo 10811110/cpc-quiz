@@ -11,6 +11,8 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
 .banner h1{font-size:1.5rem;margin-bottom:4px}
 .banner p{font-size:.85rem;opacity:.85}
 .banner button{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:white;font-size:1.2rem;cursor:pointer;padding:8px 12px;border-radius:8px}
+.banner .btn-group{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;gap:8px}
+@media (max-width:480px){.banner .btn-group{right:10px;gap:6px}.banner .btn-group button{padding:6px 10px;font-size:1.1rem}}
 .container{max-width:900px;margin:0 auto;padding:16px}
 .screen{display:none}
 .screen.active{display:block}
@@ -76,9 +78,9 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
 <div class="banner">
   <h1>🏭 職業安全衛生 題庫練習</h1>
   <p>請選擇題庫</p>
-  <div style="position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;gap:8px">
-    <button onclick="toggleSettings()" style="background:rgba(255,255,255,.2);border:none;color:white;font-size:1.2rem;cursor:pointer;padding:8px 12px;border-radius:8px" title="設定">⚙️</button>
-    <button id="toggleTheme" onclick="toggleTheme()" style="background:rgba(255,255,255,.2);border:none;color:white;font-size:1.2rem;cursor:pointer;padding:8px 12px;border-radius:8px">☀️</button>
+  <div class="btn-group">
+    <button onclick="toggleSettings()" title="設定">⚙️</button>
+    <button id="toggleTheme" onclick="toggleTheme()">☀️</button>
   </div>
 </div>
 <div class="container">
