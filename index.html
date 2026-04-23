@@ -434,6 +434,9 @@ function proceedMode() {
 function selectChapter(id) {
   STATE.chId = id;
   var ch = CHAPTERS[String(id)];
+  // 移除舊的解析區塊
+  var oldAnalysis = document.querySelector('.analysis-block');
+  if (oldAnalysis) oldAnalysis.remove();
   // 載入題目
   loadChapterQuestions(ch.file).then(function(qs) {
     if (STATE.mode === 'quiz') { shuffleArray(qs); }
