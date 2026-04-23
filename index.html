@@ -433,12 +433,15 @@ function proceedMode() {
 
 function selectChapter(id) {
   STATE.chId = id;
-  var ch = CHAPTERS[String(id)];
+  var src = CURRENT_SOURCE;
+  var chData = src === 'luo' ? CHAPTERS[String(id)] : window.JIA_DATA[String(id)];
   // 移除舊的解析區塊
   var oldAnalysis = document.querySelector('.analysis-block');
   if (oldAnalysis) oldAnalysis.remove();
   // 載入題目
-  loadChapterQuestions(ch.file).then(function(qs) {
+  if (src === 'jia' && window.JIA_DATA[String(id)] && window.JIA_DATA[String(id)].questions) {
+    // 甲業題庫：題目已內嵌，直接使用
+    var qs = window.JIA_DATA[String(id)].questions;
     if (STATE.mode === 'quiz') { shuffleArray(qs); }
     STATE.questions = qs;
     STATE.current = 0;
@@ -448,7 +451,20 @@ function selectChapter(id) {
     document.getElementById('result-area').style.display = 'none';
     goScreen('quiz-screen');
     renderQuestion();
-  });
+  } else {
+    // 一般業題庫：從外部檔案載入
+    loadChapterQuestions(chData.file).then(function(qs) {
+      if (STATE.mode === 'quiz') { shuffleArray(qs); }
+      STATE.questions = qs;
+      STATE.current = 0;
+      STATE.answers = [];
+      STATE.done = false;
+      document.getElementById('nav-row').style.display = 'flex';
+      document.getElementById('result-area').style.display = 'none';
+      goScreen('quiz-screen');
+      renderQuestion();
+    });
+  }
 }
 
 function renderQuestion() {
