@@ -437,6 +437,9 @@ function nextQ() {
   }
   if (STATE.current < STATE.questions.length - 1) {
     STATE.current++;
+    // 移除舊的解析區塊
+    var oldAnalysis = document.querySelector('.analysis-block');
+    if (oldAnalysis) oldAnalysis.remove();
     renderQuestion();
   } else {
     showResult();
@@ -446,6 +449,9 @@ function nextQ() {
 function prevQ() {
   if (STATE.current > 0) {
     STATE.current--;
+    // 移除舊的解析區塊
+    var oldAnalysis = document.querySelector('.analysis-block');
+    if (oldAnalysis) oldAnalysis.remove();
     renderQuestion();
   }
 }
