@@ -486,11 +486,19 @@ function renderQuestion() {
   
   var answered = STATE.answers[STATE.current];
   var showAnswer = (STATE.mode === 'practice' || STATE.mode === 'mistake') && answered !== undefined;
+  
+  // 計算正確答案的字母（處理甲業數字答案）
+  var correctAnswer = q.answer;
+  if (q.answer === '1' || q.answer === '2' || q.answer === '3' || q.answer === '4') {
+    var answerMap = {'1': 'A', '2': 'B', '3': 'C', '4': 'D'};
+    correctAnswer = answerMap[q.answer];
+  }
+  
   opts.forEach(function(o) {
     var isSelected = answered === o;
     var optClass = '';
     if (showAnswer) {
-      if (q.answer === o) optClass = ' correct';
+      if (correctAnswer === o) optClass = ' correct';
       else if (isSelected) optClass = ' wrong';
     } else {
       if (isSelected) optClass = ' selected';
@@ -508,8 +516,20 @@ function selectOption(opt) {
   var q = STATE.questions[STATE.current];
   STATE.answers[STATE.current] = opt;
   
+  // 答案比對：一般業答案是字母（A/B/C/D），甲業答案是數字（1/2/3/4）
+  var isCorrect = false;
+  if (q.answer === 'A' || q.answer === 'B' || q.answer === 'C' || q.answer === 'D') {
+    // 一般業：直接比對字母
+    isCorrect = (opt === q.answer);
+  } else {
+    // 甲業：答案是數字，需要轉換為字母（1=A, 2=B, 3=C, 4=D）
+    var answerMap = {'1': 'A', '2': 'B', '3': 'C', '4': 'D'};
+    var correctOpt = answerMap[q.answer];
+    isCorrect = (opt === correctOpt);
+  }
+  
   // 記錄答錯的題目到錯題本
-  if (opt !== q.answer) {
+  if (!isCorrect) {
     var key = (q._ch || STATE.chId) + '_' + q.id;
     var src = CURRENT_SOURCE;
     if (!MISTAKE_BOOK[src]) MISTAKE_BOOK[src] = {};
