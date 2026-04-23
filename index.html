@@ -419,8 +419,8 @@ function proceedMode() {
         '</div>';
     }
   } else {
-    // 甲業 20 章
-    var keys = Object.keys(window.JIA_DATA).sort();
+    // 甲業 20 章（按數字排序）
+    var keys = Object.keys(window.JIA_DATA).sort(function(a, b) { return parseInt(a) - parseInt(b); });
     keys.forEach(function(k) {
       var ch = window.JIA_DATA[k];
       html += '<div class="chapter-card" onclick="selectChapter(\''+k+'\')">' +
