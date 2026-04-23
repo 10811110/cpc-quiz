@@ -394,11 +394,25 @@ function selectOption(opt) {
   
   if (STATE.mode === 'practice') {
     renderQuestion();
-    if (q.note) {
-      var noteDiv = document.createElement('div');
-      noteDiv.style.cssText = 'margin-top:14px;padding:12px;background:#fef9e7;border-radius:8px;font-size:.9rem;color:#7d6608';
-      noteDiv.textContent = '📝 '+q.note;
-      document.querySelector('.quiz-card').appendChild(noteDiv);
+    // 詳細解析區塊（答對答錯都顯示）
+    if (q.note || q.analysis || q.law || q.tip) {
+      var analysisDiv = document.createElement('div');
+      analysisDiv.style.cssText = 'margin-top:14px;padding:14px;background:#fef9e7;border-radius:8px;font-size:.9rem;border-left:4px solid #f1c40f';
+      var html = '';
+      if (q.analysis) {
+        html += '<div style="margin-bottom:8px"><strong>📖 解析：</strong>'+q.analysis+'</div>';
+      }
+      if (q.law) {
+        html += '<div style="margin-bottom:8px;color:#2980b9"><strong>⚖️ 法規出處：</strong>'+q.law+'</div>';
+      }
+      if (q.tip) {
+        html += '<div style="color:#27ae60"><strong>💡 答題技巧：</strong>'+q.tip+'</div>';
+      }
+      if (!q.analysis && !q.law && !q.tip && q.note) {
+        html += '<div>📝 '+q.note+'</div>';
+      }
+      analysisDiv.innerHTML = html;
+      document.querySelector('.quiz-card').appendChild(analysisDiv);
     }
     // 自動跳題設定（預設關閉）
     if (SETTINGS.autoNext && STATE.current < STATE.questions.length - 1) {
