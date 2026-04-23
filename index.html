@@ -396,7 +396,12 @@ function selectOption(opt) {
     renderQuestion();
     // 詳細解析區塊（答對答錯都顯示）
     if (q.note || q.analysis || q.law || q.tip) {
+      // 先移除舊的解析區塊（如果有）
+      var oldAnalysis = document.querySelector('.analysis-block');
+      if (oldAnalysis) oldAnalysis.remove();
+      
       var analysisDiv = document.createElement('div');
+      analysisDiv.className = 'analysis-block';
       analysisDiv.style.cssText = 'margin-top:14px;padding:14px;background:#fef9e7;border-radius:8px;font-size:.9rem;border-left:4px solid #f1c40f';
       var html = '';
       if (q.analysis) {
