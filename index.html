@@ -264,7 +264,7 @@ function selectMode(mode) {
   // 如果還沒載入指定題庫，先 fetch 再繼續
   if (CURRENT_SOURCE === 'jia') {
     var d2 = document.getElementById('quizData2');
-    CHAPTERS = JSON.parse(d2.textContent);
+    window.JIA_DATA = JSON.parse(d2.textContent); // 使用獨立變數儲存甲業數據
     proceedMode();
   } else {
     proceedMode();
@@ -357,7 +357,7 @@ function proceedMode() {
     var src = CURRENT_SOURCE;
     var files = src === 'luo' 
       ? CHAPTERS // 一般業用 chapters.json
-      : JSON.parse(document.getElementById('quizData2').textContent); // 甲業用內嵌
+      : window.JIA_DATA; // 甲業用內嵌
     
     // 載入所有題目
     var loadPromises = [];
@@ -417,10 +417,10 @@ function proceedMode() {
         '</div>';
     }
   } else {
-    // 甲業20章
-    var keys = Object.keys(CHAPTERS).sort();
+    // 甲業 20 章
+    var keys = Object.keys(window.JIA_DATA).sort();
     keys.forEach(function(k) {
-      var ch = CHAPTERS[k];
+      var ch = window.JIA_DATA[k];
       html += '<div class="chapter-card" onclick="selectChapter(\''+k+'\')">' +
         '<div class="ch-card-num">'+escHtml(ch.chapter)+'</div>' +
         '<div class="ch-card-title">'+ch.total_questions+' 題</div>' +
