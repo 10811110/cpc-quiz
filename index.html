@@ -261,6 +261,8 @@ function renderHome() {
 
 function selectMode(mode) {
   STATE.mode = mode;
+  // 更新 banner 文字
+  document.querySelector('.banner p').textContent = SOURCE_NAMES[CURRENT_SOURCE];
   // 如果還沒載入指定題庫，先 fetch 再繼續
   if (CURRENT_SOURCE === 'jia') {
     var d2 = document.getElementById('quizData2');
@@ -277,7 +279,7 @@ function proceedMode() {
     var src = CURRENT_SOURCE;
     var files = src === 'luo' 
       ? CHAPTERS // 一般業用 chapters.json
-      : JSON.parse(document.getElementById('quizData2').textContent); // 甲業用內嵌
+      : window.JIA_DATA; // 甲業用內嵌
     
     // 載入所有題目
     var loadPromises = [];
