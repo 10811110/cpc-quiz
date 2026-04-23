@@ -216,9 +216,9 @@ function init() {
     }
     updateMistakeCount();
     renderHome();
-  } catch(e) {
+  }).catch(function(e) {
     document.getElementById('home').innerHTML='<p style="text-align:center;padding:40px;color:red">錯誤：'+e.message+'</p>';
-  }
+  });
 }
 
 function toggleTheme() {
@@ -270,6 +270,86 @@ function selectMode(mode) {
     proceedMode();
   }
 }
+
+function proceedMode() {
+  if (STATE.mode === 'exam') {
+    // 大考模式：從全部題目抽 80 題
+    var src = CURRENT_SOURCE;
+    var files = src === 'luo' 
+      ? CHAPTERS // 一般業用 chapters.json
+      : JSON.parse(document.getElementById('quizData2').textContent); // 甲業用內嵌
+    
+    // 載入所有題目
+    var loadPromises = [];
+    for (var k in files) {
+      var ch = files[k];
+      if (ch.file) {
+        loadPromises.push(
+          loadChapterQuestions(ch.file).then(function(qs) {
+            qs.forEach(function(q) { q._ch = k; });
+            return qs;
+          })
+        );
+      }
+    }
+    
+    Promise.all(loadPromises).then(function(results) {
+      var all = [];
+      results.forEach(function(qs) { all = all.concat(qs); });
+      shuffleArray(all);
+      var doneKeys = EXAM_HISTORY[src] || [];
+      var doneSet = {};
+      doneKeys.forEach(function(k){ doneSet[k] = true; });
+      var totalPool = src === 'luo' ? 725 : 1011;
+      var remaining = doneKeys.length >= totalPool
+        ? [] : all.filter(function(q){ return !doneSet[q._ch+'_'+q.id]; });
+      if (remaining.length < 80) {
+        EXAM_HISTORY[src] = [];
+        doneSet = {};
+        remaining = all;
+      }
+      var qs = remaining.slice(0, 80);
+      STATE.questions = qs;
+      STATE.current = 0;
+      STATE.answers = [];
+      STATE.done = false;
+      STATE.chId = null;
+      document.getElementById('nav-row').style.display = 'flex';
+      document.getElementById('result-area').style.display = 'none';
+      goScreen('quiz-screen');
+      renderQuestion();
+    });
+    return;
+  }
+  // 小考/練習模式：渲染章節選擇
+  var src = CURRENT_SOURCE;
+  var html = '';
+  if (src === 'luo') {
+    for (var i = 1; i <= 17; i++) {
+      var ch = CHAPTERS[String(i)];
+      if (!ch) continue;
+      html += '<div class="chapter-card" onclick="selectChapter(\''+i+'\')">' +
+        '<div class="ch-card-num">第 '+i+' 章</div>' +
+        '<div class="ch-card-title">'+escHtml(ch.chapter)+'</div>' +
+        '<div class="ch-card-q">'+ch.total_questions+' 題'+(ch.note?' · '+escHtml(ch.note):'')+'</div>'+
+        '</div>';
+    }
+  } else {
+    // 甲業 20 章
+    var keys = Object.keys(CHAPTERS).sort();
+    keys.forEach(function(k) {
+      var ch = CHAPTERS[k];
+      html += '<div class="chapter-card" onclick="selectChapter(\''+k+'\')">' +
+        '<div class="ch-card-num">'+escHtml(ch.chapter)+'</div>' +
+        '<div class="ch-card-title">'+ch.total_questions+' 題</div>' +
+        '</div>';
+    });
+  }
+  document.getElementById('chapter-list').innerHTML = html;
+  goScreen('chapter-select');
+}
+
+
 
 function proceedMode() {
   if (STATE.mode === 'exam') {
@@ -356,15 +436,16 @@ function selectChapter(id) {
   var ch = CHAPTERS[String(id)];
   // 載入題目
   loadChapterQuestions(ch.file).then(function(qs) {
-  if (STATE.mode === 'quiz') { shuffleArray(qs); }
-  STATE.questions = qs;
-  STATE.current = 0;
-  STATE.answers = [];
-  STATE.done = false;
-  document.getElementById('nav-row').style.display = 'flex';
-  document.getElementById('result-area').style.display = 'none';
-  goScreen('quiz-screen');
-  renderQuestion();
+    if (STATE.mode === 'quiz') { shuffleArray(qs); }
+    STATE.questions = qs;
+    STATE.current = 0;
+    STATE.answers = [];
+    STATE.done = false;
+    document.getElementById('nav-row').style.display = 'flex';
+    document.getElementById('result-area').style.display = 'none';
+    goScreen('quiz-screen');
+    renderQuestion();
+  });
 }
 
 function renderQuestion() {
