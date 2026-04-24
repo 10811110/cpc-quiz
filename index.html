@@ -184,13 +184,23 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid #ecf0f1">
         <div>
           <div style="font-weight:600;color:#2c3e50">☁️ 自動備份</div>
-          <div style="font-size:.85rem;color:#7f8c8d;margin-top:4px">每 30 分鐘自動備份進度到 Google Drive</div>
+          <div style="font-size:.85rem;color:#7f8c8d;margin-top:4px">定期自動備份進度到 Google Drive</div>
         </div>
         <label style="position:relative;display:inline-block;width:50px;height:26px">
           <input type="checkbox" id="autoBackupToggle" onchange="toggleAutoBackup()" style="opacity:0;width:0;height:0">
           <span id="autoBackupSwitch" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.3s;border-radius:26px"></span>
           <span id="autoBackupDot" style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;transition:.3s;border-radius:50%"></span>
         </label>
+      </div>
+      <div id="autoBackupIntervalRow" style="display:none;padding:12px 0;border-top:1px solid #ecf0f1">
+        <div style="font-size:.85rem;color:#2c3e50;margin-bottom:8px">⏱️ 備份間隔時間</div>
+        <select id="autoBackupInterval" onchange="changeBackupInterval()" style="width:100%;padding:10px;border:2px solid #ecf0f1;border-radius:8px;font-size:0.9rem;background:white;color:#2c3e50;cursor:pointer">
+          <option value="15">每 15 分鐘</option>
+          <option value="30">每 30 分鐘</option>
+          <option value="60">每 1 小時</option>
+          <option value="120">每 2 小時</option>
+          <option value="360">每 6 小時</option>
+        </select>
       </div>
       <button onclick="toggleSettings()" style="width:100%;margin-top:16px;padding:12px;background:#e74c3c;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer">關閉</button>
     </div>
@@ -219,7 +229,7 @@ var CHAPTERS = null;
 var CURRENT_SOURCE = null;
 var EXAM_HISTORY = JSON.parse(localStorage.getItem('examHistory') || '{}');
 var MISTAKE_BOOK = JSON.parse(localStorage.getItem('mistakeBook') || '{}');
-var SETTINGS = JSON.parse(localStorage.getItem('settings') || '{"autoNext":false,"autoBackup":false}');
+var SETTINGS = JSON.parse(localStorage.getItem('settings') || '{"autoNext":false,"autoBackup":false,"autoBackupInterval":30}');
 var PROGRESS = JSON.parse(localStorage.getItem('progress') || '{}');
 function saveMistakeBook() { localStorage.setItem('mistakeBook', JSON.stringify(MISTAKE_BOOK)); }
 function saveExamHistory() { localStorage.setItem('examHistory', JSON.stringify(EXAM_HISTORY)); }
@@ -301,6 +311,14 @@ function toggleSettings() {
     updateToggleStyle(SETTINGS.autoNext);
     document.getElementById('autoBackupToggle').checked = SETTINGS.autoBackup || false;
     updateAutoBackupToggleStyle(SETTINGS.autoBackup || false);
+    
+    // 更新間隔時間選擇器
+    var intervalRow = document.getElementById('autoBackupIntervalRow');
+    var intervalSelect = document.getElementById('autoBackupInterval');
+    if (intervalRow && intervalSelect) {
+      intervalRow.style.display = (SETTINGS.autoBackup || false) ? 'block' : 'none';
+      intervalSelect.value = String(SETTINGS.autoBackupInterval || 30);
+    }
   }
 }
 
@@ -322,29 +340,70 @@ function toggleAutoBackup() {
   saveSettings();
   updateAutoBackupToggleStyle(SETTINGS.autoBackup);
   
+  // 顯示/隱藏間隔時間選擇器
+  var intervalRow = document.getElementById('autoBackupIntervalRow');
+  if (intervalRow) {
+    intervalRow.style.display = SETTINGS.autoBackup ? 'block' : 'none';
+  }
+  
   if (SETTINGS.autoBackup) {
-    // 啟動自動備份：每 30 分鐘執行一次
-    autoBackupInterval = setInterval(function() {
-      if (googleToken) {
-        console.log('🔄 自動備份中...');
-        backupToDrive();
-      }
-    }, 30 * 60 * 1000); // 30 分鐘
-    
-    // 立即執行一次備份（如果已登入）
-    if (googleToken) {
-      backupToDrive();
-    }
-    
-    alert('☁️ 自動備份已開啟！\n每 30 分鐘自動備份進度到 Google Drive');
+    startAutoBackup();
   } else {
-    // 停止自動備份
-    if (autoBackupInterval) {
-      clearInterval(autoBackupInterval);
-      autoBackupInterval = null;
-    }
+    stopAutoBackup();
     alert('☁️ 自動備份已關閉');
   }
+}
+
+function startAutoBackup() {
+  // 停止現有定時器
+  stopAutoBackup();
+  
+  var intervalMinutes = SETTINGS.autoBackupInterval || 30;
+  var intervalMs = intervalMinutes * 60 * 1000;
+  
+  // 啟動新定時器
+  autoBackupInterval = setInterval(function() {
+    if (googleToken) {
+      console.log('🔄 自動備份中...（每 ' + intervalMinutes + ' 分鐘）');
+      backupToDrive();
+    }
+  }, intervalMs);
+  
+  // 立即執行一次備份（如果已登入）
+  if (googleToken) {
+    backupToDrive();
+  }
+  
+  var timeText = intervalMinutes >= 60 
+    ? '每 ' + (intervalMinutes / 60) + ' 小時' 
+    : '每 ' + intervalMinutes + ' 分鐘';
+  
+  alert('☁️ 自動備份已開啟！\n' + timeText + '自動備份進度到 Google Drive');
+}
+
+function stopAutoBackup() {
+  if (autoBackupInterval) {
+    clearInterval(autoBackupInterval);
+    autoBackupInterval = null;
+  }
+}
+
+function changeBackupInterval() {
+  var select = document.getElementById('autoBackupInterval');
+  SETTINGS.autoBackupInterval = parseInt(select.value, 10);
+  saveSettings();
+  
+  // 如果自動備份已開啟，重新啟動定時器
+  if (SETTINGS.autoBackup) {
+    startAutoBackup();
+  }
+  
+  var minutes = SETTINGS.autoBackupInterval;
+  var timeText = minutes >= 60 
+    ? '每 ' + (minutes / 60) + ' 小時' 
+    : '每 ' + minutes + ' 分鐘';
+  
+  console.log('⏱️ 備份間隔已變更：' + timeText);
 }
 
 // 進度追蹤功能
@@ -948,15 +1007,20 @@ window.addEventListener('DOMContentLoaded', function() {
       googleUser = JSON.parse(localStorage.getItem('googleUser') || 'null');
       googleTokenExpiry = localStorage.getItem('googleTokenExpiry');
       
-      // 啟動自動備份定時器
+      // 啟動自動備份定時器（使用儲存的間隔時間）
+      var intervalMinutes = SETTINGS.autoBackupInterval || 30;
       autoBackupInterval = setInterval(function() {
         if (googleToken) {
-          console.log('🔄 自動備份中...');
+          console.log('🔄 自動備份中...（每 ' + intervalMinutes + ' 分鐘）');
           backupToDrive();
         }
-      }, 30 * 60 * 1000); // 30 分鐘
+      }, intervalMinutes * 60 * 1000);
       
-      console.log('☁️ 自動備份已恢復（每 30 分鐘）');
+      var timeText = intervalMinutes >= 60 
+        ? '每 ' + (intervalMinutes / 60) + ' 小時' 
+        : '每 ' + intervalMinutes + ' 分鐘';
+      
+      console.log('☁️ 自動備份已恢復（' + timeText + '）');
     }
   }
 });
