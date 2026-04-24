@@ -545,34 +545,46 @@ function initGoogleAuth() {
 // Google 登入
 function signInWithGoogle() {
   initGoogleAuth().then(function() {
-    google.accounts.id.initialize({
+    // 使用 token client 模式，避免 cookie 問題
+    google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
-      callback: handleGoogleResponse,
-      scope: 'https://www.googleapis.com/auth/drive.file'
-    });
-    google.accounts.id.prompt();
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: function(tokenResponse) {
+        if (tokenResponse.access_token) {
+          // 取得使用者資訊
+          fetchUserInfo(tokenResponse.access_token);
+        }
+      }
+    }).requestAccessToken();
   }).catch(function(err) {
     console.error('Google API 載入失敗:', err);
     alert('Google API 載入失敗，請檢查網路連線');
   });
 }
 
-function handleGoogleResponse(response) {
-  if (response.credential) {
-    // 解碼 JWT 取得使用者資訊
-    var userInfo = JSON.parse(atob(response.credential.split('.')[1]));
+function fetchUserInfo(accessToken) {
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { 'Authorization': 'Bearer ' + accessToken }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(userInfo) {
     googleUser = {
       name: userInfo.name,
       email: userInfo.email,
-      picture: userInfo.picture
+      picture: userInfo.picture,
+      token: accessToken
     };
     localStorage.setItem('googleUser', JSON.stringify(googleUser));
-    localStorage.setItem('googleToken', response.credential);
+    localStorage.setItem('googleToken', accessToken);
     alert('Google 帳號綁定成功！\n' + userInfo.email);
     updateGoogleUI();
     // 首次登入自動備份
     backupToDrive();
-  }
+  })
+  .catch(function(err) {
+    console.error('取得使用者資訊失敗:', err);
+    alert('登入失敗：' + err.message);
+  });
 }
 
 // Google 登出
@@ -623,8 +635,8 @@ function backupToDrive() {
   if (statusEl) statusEl.textContent = '⏳ 備份中...';
   
   // 使用 Google Drive API
+  gapi.client.setToken({ access_token: googleToken });
   gapi.client.init({
-    apiKey: GOOGLE_CLIENT_ID.replace('.apps.googleusercontent.com', ''),
     discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
   }).then(function() {
     // 尋找或建立備份資料夾
@@ -713,8 +725,8 @@ function restoreFromDrive() {
   var statusEl = document.getElementById('google-status');
   if (statusEl) statusEl.textContent = '⏳ 恢復中...';
   
+  gapi.client.setToken({ access_token: googleToken });
   gapi.client.init({
-    apiKey: GOOGLE_CLIENT_ID.replace('.apps.googleusercontent.com', ''),
     discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
   }).then(function() {
     return gapi.client.drive.files.list({
