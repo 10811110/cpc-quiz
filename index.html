@@ -778,14 +778,31 @@ function backupToDrive() {
       var timeStr = now.toLocaleString('zh-TW');
       if (statusEl) statusEl.textContent = '✅ 最後備份：' + timeStr;
       localStorage.setItem('lastBackup', timeStr);
-      alert('備份成功！\n檔案已儲存至 Google Drive / ' + DRIVE_FOLDER_NAME + '/' + BACKUP_FILENAME);
+      alert('備份成功！\\n檔案已儲存至 Google Drive / ' + DRIVE_FOLDER_NAME + '/' + BACKUP_FILENAME);
     } else {
-      throw new Error('備份失敗');
+      // 嘗試解析錯誤訊息
+      return response.json().then(function(errData) {
+        var errMsg = errData.error ? errData.error.message : '備份失敗';
+        throw new Error(errMsg);
+      }).catch(function() {
+        throw new Error('備份失敗 (HTTP ' + response.status + ')');
+      });
     }
   }).catch(function(err) {
     console.error('備份失敗:', err);
     if (statusEl) statusEl.textContent = '❌ 備份失敗';
-    alert('備份失敗：' + err.message);
+    
+    // 提供更詳細的錯誤訊息
+    var userMsg = err.message;
+    if (userMsg.indexOf('insufficientFilePermissions') >= 0) {
+      userMsg = '權限不足，請重新登入並授權 Drive 權限';
+    } else if (userMsg.indexOf('cannotModifySharedDrive') >= 0) {
+      userMsg = '無法備份到共用硬碟';
+    } else if (userMsg.indexOf('storageQuotaExceeded') >= 0) {
+      userMsg = 'Google Drive 空間已滿';
+    }
+    
+    alert('備份失敗：' + userMsg + '\\n\\n詳細錯誤：' + err.message);
   });
 }
 
