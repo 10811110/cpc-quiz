@@ -287,9 +287,41 @@ function proceedMode() {
   if (STATE.mode === 'exam') {
     // 大考模式：從全部題目抽 80 題
     var src = CURRENT_SOURCE;
+    
+    // 技術士題庫：直接從內嵌數據讀取題目
+    if (src === 'zhian') {
+      var zhianData = window.ZHIAN_DATA['1'];
+      var qs = zhianData.questions;
+      qs.forEach(function(q) { q._ch = '1'; });
+      shuffleArray(qs);
+      var doneKeys = EXAM_HISTORY[src] || [];
+      var doneSet = {};
+      doneKeys.forEach(function(k){ doneSet[k] = true; });
+      var totalPool = 100;
+      var remaining = doneKeys.length >= totalPool
+        ? [] : qs.filter(function(q){ return !doneSet['1_'+q.id]; });
+      if (remaining.length < 80) {
+        EXAM_HISTORY[src] = [];
+        doneSet = {};
+        remaining = qs;
+      }
+      qs = remaining.slice(0, 80);
+      STATE.questions = qs;
+      STATE.current = 0;
+      STATE.answers = [];
+      STATE.done = false;
+      STATE.chId = null;
+      document.getElementById('nav-row').style.display = 'flex';
+      document.getElementById('result-area').style.display = 'none';
+      goScreen('quiz-screen');
+      renderQuestion();
+      return;
+    }
+    
+    // 一般業和甲業
     var files = src === 'luo' 
       ? CHAPTERS // 一般業用 chapters.json
-      : (src === 'jia' ? window.JIA_DATA : window.ZHIAN_DATA); // 甲業或技術士用內嵌
+      : window.JIA_DATA; // 甲業用內嵌
     
     // 載入所有題目
     var loadPromises = [];
@@ -312,7 +344,7 @@ function proceedMode() {
       var doneKeys = EXAM_HISTORY[src] || [];
       var doneSet = {};
       doneKeys.forEach(function(k){ doneSet[k] = true; });
-      var totalPool = src === 'luo' ? 725 : (src === 'jia' ? 1011 : 100);
+      var totalPool = src === 'luo' ? 725 : 1011;
       var remaining = doneKeys.length >= totalPool
         ? [] : all.filter(function(q){ return !doneSet[q._ch+'_'+q.id]; });
       if (remaining.length < 80) {
@@ -363,8 +395,12 @@ function proceedMode() {
     return;
   } else {
     // 甲業 20 章
-    var data = src === 'jia' ? window.JIA_DATA : window.ZHIAN_DATA;
-    var keys = Object.keys(data).sort();
+    var data = window.JIA_DATA;
+    if (!data) {
+      console.error('JIA_DATA not loaded');
+      return;
+    }
+    var keys = Object.keys(data).sort(function(a, b) { return parseInt(a) - parseInt(b); });
     keys.forEach(function(k) {
       var ch = data[k];
       html += '<div class="chapter-card" onclick="selectChapter(\''+k+'\')">' +
