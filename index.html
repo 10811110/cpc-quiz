@@ -522,11 +522,28 @@ var DRIVE_FOLDER_NAME = 'CPC 題庫練習';
 var BACKUP_FILENAME = 'cpc-quiz-progress.json';
 var googleToken = localStorage.getItem('googleToken');
 var googleUser = JSON.parse(localStorage.getItem('googleUser') || 'null');
+var googleTokenExpiry = localStorage.getItem('googleTokenExpiry');
+
+// 檢查 token 是否過期
+function isTokenExpired() {
+  if (!googleTokenExpiry) return true;
+  var expiry = new Date(googleTokenExpiry);
+  // 提前 5 分鐘視為過期
+  return new Date() >= new Date(expiry.getTime() - 5 * 60 * 1000);
+}
 
 // 頁面載入時檢查是否有儲存的登入狀態
 window.addEventListener('DOMContentLoaded', function() {
-  if (googleUser && googleToken) {
+  if (googleUser && googleToken && !isTokenExpired()) {
     console.log('已登入用戶:', googleUser.email);
+  } else if (googleUser && googleToken && isTokenExpired()) {
+    console.log('Token 已過期，需要重新登入');
+    // 清除過期的 token
+    localStorage.removeItem('googleToken');
+    localStorage.removeItem('googleUser');
+    localStorage.removeItem('googleTokenExpiry');
+    googleToken = null;
+    googleUser = null;
   }
 });
 
@@ -577,7 +594,12 @@ function fetchUserInfo(accessToken) {
   fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   })
-  .then(function(r) { return r.json(); })
+  .then(function(r) { 
+    if (!r.ok) {
+      throw new Error('無法取得用戶資訊');
+    }
+    return r.json(); 
+  })
   .then(function(userInfo) {
     googleUser = {
       name: userInfo.name || 'User',
@@ -586,8 +608,15 @@ function fetchUserInfo(accessToken) {
       token: accessToken
     };
     googleToken = accessToken;
+    // 保存 token 過期時間（OAuth2 token 通常 1 小時過期）
+    var expiryTime = new Date();
+    expiryTime.setHours(expiryTime.getHours() + 1);
+    googleTokenExpiry = expiryTime.toISOString();
+    
     localStorage.setItem('googleUser', JSON.stringify(googleUser));
     localStorage.setItem('googleToken', accessToken);
+    localStorage.setItem('googleTokenExpiry', googleTokenExpiry);
+    
     alert('Google 帳號綁定成功！\n' + userInfo.email);
     updateGoogleUI();
     // 首次登入自動備份
@@ -604,10 +633,12 @@ function signOutFromGoogle() {
   // 清除 localStorage
   localStorage.removeItem('googleToken');
   localStorage.removeItem('googleUser');
+  localStorage.removeItem('googleTokenExpiry');
   
   // 清除全域變數
   googleToken = null;
   googleUser = null;
+  googleTokenExpiry = null;
   
   // 更新 UI
   updateGoogleUI();
