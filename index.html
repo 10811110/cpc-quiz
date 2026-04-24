@@ -365,13 +365,13 @@ function startAutoBackup() {
   autoBackupInterval = setInterval(function() {
     if (googleToken) {
       console.log('🔄 自動備份中...（每 ' + intervalMinutes + ' 分鐘）');
-      backupToDrive();
+      backupToDrive(true); // true = 自動備份，失敗時不彈出 alert
     }
   }, intervalMs);
   
   // 立即執行一次備份（如果已登入）
   if (googleToken) {
-    backupToDrive();
+    backupToDrive(true);
   }
   
   var timeText = intervalMinutes >= 60 
@@ -642,20 +642,55 @@ function isTokenExpired() {
   return new Date() >= new Date(expiry.getTime() - 5 * 60 * 1000);
 }
 
+// 檢查 token 是否即將過期（10 分鐘內）
+function isTokenExpiringSoon() {
+  if (!googleTokenExpiry) return true;
+  var expiry = new Date(googleTokenExpiry);
+  return new Date() >= new Date(expiry.getTime() - 10 * 60 * 1000);
+}
+
 // 頁面載入時檢查是否有儲存的登入狀態
 window.addEventListener('DOMContentLoaded', function() {
   if (googleUser && googleToken && !isTokenExpired()) {
-    console.log('已登入用戶:', googleUser.email);
+    console.log('✅ 已登入用戶:', googleUser.email);
+    // 如果 token 即將過期，設置定時器提示
+    if (isTokenExpiringSoon()) {
+      scheduleTokenExpiryWarning();
+    }
   } else if (googleUser && googleToken && isTokenExpired()) {
-    console.log('Token 已過期，需要重新登入');
+    console.log('⚠️ Token 已過期，需要重新登入');
     // 清除過期的 token
     localStorage.removeItem('googleToken');
     localStorage.removeItem('googleUser');
     localStorage.removeItem('googleTokenExpiry');
     googleToken = null;
     googleUser = null;
+    googleTokenExpiry = null;
   }
 });
+
+// 安排 Token 過期警告
+function scheduleTokenExpiryWarning() {
+  if (!googleTokenExpiry) return;
+  
+  var expiry = new Date(googleTokenExpiry);
+  var now = new Date();
+  var timeUntilExpiry = expiry.getTime() - now.getTime();
+  
+  // 在過期前 5 分鐘提示
+  var warningTime = Math.max(0, timeUntilExpiry - 5 * 60 * 1000);
+  
+  setTimeout(function() {
+    if (googleToken && document.getElementById('progress-modal') && document.getElementById('progress-modal').style.display === 'none') {
+      // 只在用戶沒有開啟進度視窗時提示
+      console.log('⏰ Token 即將過期，提示用戶重新登入');
+      var statusEl = document.getElementById('google-status');
+      if (statusEl) {
+        statusEl.innerHTML = '<span style="color:#e74c3c">⚠️ 登入即將過期，請重新登入</span>';
+      }
+    }
+  }, warningTime);
+}
 
 // 初始化 Google API
 function initGoogleAuth() {
@@ -798,9 +833,30 @@ function updateGoogleUI() {
 }
 
 // 備份到 Google Drive
-function backupToDrive() {
+function backupToDrive(isAutoBackup) {
   if (!googleToken) {
+    if (isAutoBackup) {
+      // 自動備份時不彈出 alert，只記錄 console
+      console.warn('☁️ 自動備份跳過：未登入 Google');
+      return;
+    }
     alert('請先綁定 Google 帳號');
+    signInWithGoogle();
+    return;
+  }
+  
+  // 檢查 token 是否過期
+  if (isTokenExpired()) {
+    console.warn('⚠️ Token 已過期，需要重新登入');
+    if (isAutoBackup) {
+      // 自動備份時只更新狀態顯示
+      var statusEl = document.getElementById('google-status');
+      if (statusEl) {
+        statusEl.innerHTML = '<span style="color:#e74c3c">⚠️ 登入已過期，請重新登入</span>';
+      }
+      return;
+    }
+    alert('Google 登入已過期，請重新登入');
     signInWithGoogle();
     return;
   }
@@ -811,11 +867,13 @@ function backupToDrive() {
     if (statusEl) statusEl.textContent = '⏳ 載入 API...';
     
     initGoogleAuth().then(function() {
-      backupToDrive(); // 重新呼叫
+      backupToDrive(isAutoBackup); // 重新呼叫
     }).catch(function(err) {
       console.error('Google API 載入失敗:', err);
       if (statusEl) statusEl.textContent = '❌ API 載入失敗';
-      alert('Google API 載入失敗，請重新整理頁面');
+      if (!isAutoBackup) {
+        alert('Google API 載入失敗，請重新整理頁面');
+      }
     });
     return;
   }
@@ -1012,7 +1070,7 @@ window.addEventListener('DOMContentLoaded', function() {
       autoBackupInterval = setInterval(function() {
         if (googleToken) {
           console.log('🔄 自動備份中...（每 ' + intervalMinutes + ' 分鐘）');
-          backupToDrive();
+          backupToDrive(true); // true = 自動備份
         }
       }, intervalMinutes * 60 * 1000);
       
