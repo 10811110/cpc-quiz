@@ -695,6 +695,21 @@ function backupToDrive() {
     return;
   }
   
+  // 確保 gapi 已載入
+  if (!window.gapi || !gapi.client) {
+    var statusEl = document.getElementById('google-status');
+    if (statusEl) statusEl.textContent = '⏳ 載入 API...';
+    
+    initGoogleAuth().then(function() {
+      backupToDrive(); // 重新呼叫
+    }).catch(function(err) {
+      console.error('Google API 載入失敗:', err);
+      if (statusEl) statusEl.textContent = '❌ API 載入失敗';
+      alert('Google API 載入失敗，請重新整理頁面');
+    });
+    return;
+  }
+  
   var statusEl = document.getElementById('google-status');
   if (statusEl) statusEl.textContent = '⏳ 備份中...';
   
