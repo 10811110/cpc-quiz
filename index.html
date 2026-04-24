@@ -327,15 +327,16 @@ function proceedMode() {
   var src = CURRENT_SOURCE;
   var html = '';
   if (src === 'luo') {
-    for (var i = 1; i <= 17; i++) {
-      var ch = CHAPTERS[String(i)];
-      if (!ch) continue;
-      html += '<div class="chapter-card" onclick="selectChapter(\''+i+'\')">' +
-        '<div class="ch-card-num">第 '+i+' 章</div>' +
+    // 一般業：動態讀取所有章节
+    var keys = Object.keys(CHAPTERS).sort(function(a,b){return parseInt(a)-parseInt(b);});
+    keys.forEach(function(k) {
+      var ch = CHAPTERS[k];
+      html += '<div class="chapter-card" onclick="selectChapter(\''+k+'\')">' +
+        '<div class="ch-card-num">第 '+k+' 章</div>' +
         '<div class="ch-card-title">'+escHtml(ch.chapter)+'</div>' +
         '<div class="ch-card-q">'+ch.total_questions+' 題'+(ch.note?' · '+escHtml(ch.note):'')+'</div>'+
         '</div>';
-    }
+    });
   } else {
     // 甲業 20 章
     var keys = Object.keys(CHAPTERS).sort();
