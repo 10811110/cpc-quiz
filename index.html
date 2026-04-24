@@ -81,7 +81,6 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
   <p>請選擇題庫</p>
   <div class="btn-group">
     <button onclick="toggleSettings()" title="設定">⚙️</button>
-    <button id="toggleTheme" onclick="toggleTheme()">☀️</button>
   </div>
 </div>
 <div class="container">
@@ -155,6 +154,17 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
       <h3 style="margin-bottom:16px;font-size:1.2rem;color:#2c3e50">⚙️ 設定</h3>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid #ecf0f1">
         <div>
+          <div style="font-weight:600;color:#2c3e50">🌙 深色模式</div>
+          <div style="font-size:.85rem;color:#7f8c8d;margin-top:4px">切換深色/淺色主題</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:50px;height:26px">
+          <input type="checkbox" id="themeToggle" onchange="toggleTheme()" style="opacity:0;width:0;height:0">
+          <span id="themeSwitch" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.3s;border-radius:26px"></span>
+          <span id="themeDot" style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;transition:.3s;border-radius:50%"></span>
+        </label>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid #ecf0f1">
+        <div>
           <div style="font-weight:600;color:#2c3e50">🚀 自動跳下一題</div>
           <div style="font-size:.85rem;color:#7f8c8d;margin-top:4px">練習模式下，選完答案後 1.5 秒自動跳下一題</div>
         </div>
@@ -215,9 +225,9 @@ function init() {
   loadChaptersData().then(function(data) {
     CHAPTERS = data;
     // 載入主題設定
-    if (localStorage.getItem('theme') === 'dark') {
+    var isDark = localStorage.getItem('theme') === 'dark';
+    if (isDark) {
       document.body.classList.add('dark');
-      document.getElementById('toggleTheme').textContent = '🌙';
     }
     updateMistakeCount();
     renderHome();
@@ -228,9 +238,16 @@ function init() {
 
 function toggleTheme() {
   document.body.classList.toggle('dark');
-  var btn = document.getElementById('toggleTheme');
-  btn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
-  localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+  var isDark = document.body.classList.contains('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  // 更新設定視窗中的開關狀態
+  document.getElementById('themeToggle').checked = isDark;
+  updateThemeToggleStyle(isDark);
+}
+
+function updateThemeToggleStyle(isOn) {
+  document.getElementById('themeSwitch').style.background = isOn ? '#27ae60' : '#ccc';
+  document.getElementById('themeDot').style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
 }
 
 function toggleSettings() {
@@ -239,6 +256,9 @@ function toggleSettings() {
   modal.style.display = isOpen ? 'none' : 'flex';
   if (!isOpen) {
     // 開啟時更新開關狀態
+    var isDark = document.body.classList.contains('dark');
+    document.getElementById('themeToggle').checked = isDark;
+    updateThemeToggleStyle(isDark);
     document.getElementById('autoNextToggle').checked = SETTINGS.autoNext;
     updateToggleStyle(SETTINGS.autoNext);
   }
@@ -285,6 +305,10 @@ function selectMode(mode) {
         });
         window.ZHIAN_DATA = data;
         proceedMode();
+      })
+      .catch(err => {
+        console.error('Failed to load zhian chapters:', err);
+        alert('載入技術士題庫失敗，請刷新頁面重試');
       });
     return;
   } else {
