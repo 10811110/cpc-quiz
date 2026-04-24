@@ -290,6 +290,10 @@ function proceedMode() {
     
     // 技術士題庫：直接從內嵌數據讀取題目
     if (src === 'zhian') {
+      // 先移除舊的解析區塊
+      var oldAnalysis = document.querySelector('.analysis-block');
+      if (oldAnalysis) oldAnalysis.remove();
+      
       var zhianData = window.ZHIAN_DATA['1'];
       var qs = zhianData.questions;
       qs.forEach(function(q) { q._ch = '1'; });
@@ -381,6 +385,10 @@ function proceedMode() {
     });
   } else if (src === 'zhian') {
     // 技術士題庫：只有一章，直接從內嵌數據載入
+    // 先移除舊的解析區塊
+    var oldAnalysis = document.querySelector('.analysis-block');
+    if (oldAnalysis) oldAnalysis.remove();
+    
     var zhianData = window.ZHIAN_DATA['1'];
     var qs = zhianData.questions;
     qs.forEach(function(q) { q._ch = '1'; });
@@ -452,6 +460,10 @@ function selectChapter(id) {
 }
 
 function renderQuestion() {
+  // 先移除舊的解析區塊
+  var oldAnalysis = document.querySelector('.analysis-block');
+  if (oldAnalysis) oldAnalysis.remove();
+  
   var q = STATE.questions[STATE.current];
   var total = STATE.questions.length;
   document.getElementById('progress-fill').style.width = ((STATE.current+1)/total*100)+'%';
