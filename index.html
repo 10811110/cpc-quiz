@@ -750,22 +750,30 @@ function backupToDrive() {
   }).then(function(params) {
     var blob = new Blob([JSON.stringify(PROGRESS, null, 2)], { type: 'application/json' });
     var formData = new FormData();
-    var metadata = {
-      name: BACKUP_FILENAME,
-      parents: [params.folderId]
-    };
-    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    formData.append('file', blob);
     
     if (params.existingFile) {
-      // 更新現有檔案
+      // 更新現有檔案 - 不需要指定 parents
+      var metadata = {
+        name: BACKUP_FILENAME
+      };
+      formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      formData.append('file', blob);
+      
+      // 使用 PATCH 更新檔案內容
       return fetch('https://www.googleapis.com/upload/drive/v3/files/' + params.existingFile.id + '?uploadType=multipart', {
         method: 'PATCH',
         headers: new Headers({ 'Authorization': 'Bearer ' + googleToken }),
         body: formData
       });
     } else {
-      // 建立新檔案
+      // 建立新檔案 - 需要指定 parents
+      var metadata = {
+        name: BACKUP_FILENAME,
+        parents: [params.folderId]
+      };
+      formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      formData.append('file', blob);
+      
       return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
         method: 'POST',
         headers: new Headers({ 'Authorization': 'Bearer ' + googleToken }),
