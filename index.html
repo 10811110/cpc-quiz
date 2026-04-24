@@ -628,9 +628,16 @@ function importProgressFromURL() {
 
 // Google Drive 備份功能（OAuth 2.0 PKCE 流程）
 var GOOGLE_CLIENT_ID = '426710031721-ivj74khe2f46a8t59189356sjahljh9v.apps.googleusercontent.com';
-var GOOGLE_REDIRECT_URI = window.location.origin + window.location.pathname;
+var GOOGLE_REDIRECT_URI = window.location.origin + window.location.pathname; // 使用當前頁面
 var DRIVE_FOLDER_NAME = 'CPC 題庫練習';
 var BACKUP_FILENAME = 'cpc-quiz-progress.json';
+
+// 調試：輸出設定
+console.log('🔐 Google OAuth 設定:', {
+  client_id: GOOGLE_CLIENT_ID,
+  redirect_uri: GOOGLE_REDIRECT_URI,
+  current_url: window.location.href
+});
 
 // Google Token 相關（包含 Refresh Token）
 var googleToken = localStorage.getItem('googleToken');
@@ -706,6 +713,11 @@ function handleAuthCallback() {
 
 // 用 authorization code 交換 token（包含 refresh token）
 function exchangeCodeForToken(code, codeVerifier) {
+  console.log('🔄 正在交換 token...');
+  console.log('📝 Code:', code.substring(0, 20) + '...');
+  console.log('📝 Code Verifier:', codeVerifier.substring(0, 20) + '...');
+  console.log('📝 Redirect URI:', GOOGLE_REDIRECT_URI);
+  
   fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: {
@@ -719,21 +731,32 @@ function exchangeCodeForToken(code, codeVerifier) {
       redirect_uri: GOOGLE_REDIRECT_URI
     })
   })
-  .then(function(r) { return r.json(); })
+  .then(function(r) {
+    console.log('📥 Token 回應狀態:', r.status);
+    return r.json();
+  })
   .then(function(data) {
+    console.log('📦 Token 回應內容:', data);
+    
     if (data.error) {
-      console.error('Token 交換失敗:', data.error);
-      alert('登入失敗：' + data.error_description);
+      console.error('❌ Token 交換失敗:', data.error);
+      console.error('📝 錯誤詳情:', data.error_description);
+      alert('登入失敗：' + data.error + '\n\n' + data.error_description + '\n\n請確認：\n1. Google Cloud Console 中的 Redirect URI 是否正確\n2. Redirect URI 必須完全一致（包含結尾斜線）');
       return;
     }
     
     // 儲存 token
     googleToken = data.access_token;
     googleRefreshToken = data.refresh_token || googleRefreshToken; // 可能不會每次都回傳
+    console.log('✅ Access Token:', data.access_token ? '取得成功' : '失敗');
+    console.log('✅ Refresh Token:', data.refresh_token ? '取得成功' : '未取得（可能已授權過）');
+    
     var expiresIn = data.expires_in || 3600;
     var expiryTime = new Date();
     expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
     googleTokenExpiry = expiryTime.toISOString();
+    
+    console.log('⏰ Token 過期時間:', googleTokenExpiry);
     
     // 取得用戶資訊
     return fetchUserInfo(googleToken);
@@ -745,12 +768,14 @@ function exchangeCodeForToken(code, codeVerifier) {
     localStorage.setItem('googleTokenExpiry', googleTokenExpiry);
     localStorage.setItem('googleUser', JSON.stringify(googleUser));
     
+    console.log('✅ 登入成功！用戶:', googleUser.email);
+    
     alert('Google 帳號綁定成功！\n' + googleUser.email);
     updateGoogleUI();
     backupToDrive();
   })
   .catch(function(err) {
-    console.error('Token 交換失敗:', err);
+    console.error('❌ Token 交換失敗:', err);
     alert('登入失敗：' + err.message);
   });
 }
@@ -871,24 +896,36 @@ function scheduleTokenExpiryWarning() {
 
 // Google 登入（PKCE 流程）
 async function signInWithGoogle() {
+  console.log('🔐 開始 OAuth PKCE 流程...');
+  
   // 生成 PKCE 參數
   var codeVerifier = generateCodeVerifier();
   var codeChallenge = await generateCodeChallenge(codeVerifier);
   
+  console.log('🔑 Code Verifier:', codeVerifier.substring(0, 20) + '...');
+  console.log('🔑 Code Challenge:', codeChallenge);
+  
   // 儲存 code verifier 到 sessionStorage（回調時需要）
   sessionStorage.setItem('codeVerifier', codeVerifier);
+  console.log('💾 Code verifier 已儲存到 sessionStorage');
   
   // 建立授權 URL
-  var authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
+  var params = {
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: GOOGLE_REDIRECT_URI,
     response_type: 'code',
     scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-    access_type: 'offline', // 關鍵：要求 refresh token
-    prompt: 'consent', // 強制取得 refresh token
+    access_type: 'offline',
+    prompt: 'consent',
     code_challenge: codeChallenge,
     code_challenge_method: 'S256'
-  });
+  };
+  
+  console.log('📋 OAuth 參數:', params);
+  
+  var authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams(params);
+  
+  console.log('🔗 授權 URL:', authUrl.substring(0, 200) + '...');
   
   // 跳轉到 Google 授權頁面
   window.location.href = authUrl;
