@@ -309,6 +309,10 @@ function showProgress() {
   // 關閉設定視窗
   document.getElementById('settings-modal').style.display = 'none';
   
+  // 重新讀取 localStorage 中的登入狀態（確保最新）
+  googleToken = localStorage.getItem('googleToken');
+  googleUser = JSON.parse(localStorage.getItem('googleUser') || 'null');
+  
   // 初始化 Google UI
   updateGoogleUI();
   
@@ -519,6 +523,13 @@ var BACKUP_FILENAME = 'cpc-quiz-progress.json';
 var googleToken = localStorage.getItem('googleToken');
 var googleUser = JSON.parse(localStorage.getItem('googleUser') || 'null');
 
+// 頁面載入時檢查是否有儲存的登入狀態
+window.addEventListener('DOMContentLoaded', function() {
+  if (googleUser && googleToken) {
+    console.log('已登入用戶:', googleUser.email);
+  }
+});
+
 // 初始化 Google API
 function initGoogleAuth() {
   return new Promise(function(resolve, reject) {
@@ -574,6 +585,7 @@ function fetchUserInfo(accessToken) {
       picture: userInfo.picture,
       token: accessToken
     };
+    googleToken = accessToken;
     localStorage.setItem('googleUser', JSON.stringify(googleUser));
     localStorage.setItem('googleToken', accessToken);
     alert('Google 帳號綁定成功！\n' + userInfo.email);
