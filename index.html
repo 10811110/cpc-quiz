@@ -190,6 +190,11 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
     <div style="background:white;border-radius:16px;padding:24px;max-width:600px;width:100%;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-height:80vh;overflow-y:auto">
       <h3 style="margin-bottom:16px;font-size:1.2rem;color:#2c3e50">📊 學習進度</h3>
       <div id="progress-content"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:20px">
+        <button onclick="exportProgress()" style="padding:10px;background:#3498db;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">📤 匯出</button>
+        <button onclick="importProgress()" style="padding:10px;background:#2ecc71;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">📥 匯入</button>
+        <button onclick="shareProgress()" style="padding:10px;background:#9b59b6;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">🔗 分享</button>
+      </div>
       <button onclick="closeProgress()" style="width:100%;margin-top:16px;padding:12px;background:#e74c3c;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer">關閉</button>
     </div>
   </div>
@@ -427,6 +432,79 @@ function resetProgress() {
   }
 }
 
+// 進度匯出功能
+function exportProgress() {
+  var data = JSON.stringify(PROGRESS, null, 2);
+  var blob = new Blob([data], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'cpc-quiz-progress-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// 進度匯入功能
+function importProgress() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = JSON.parse(e.target.result);
+        if (confirm('匯入的進度將覆蓋現有進度，確定要繼續嗎？')) {
+          PROGRESS = data;
+          saveProgress();
+          alert('進度匯入成功！');
+          showProgress(); // 重新顯示進度
+        }
+      } catch (err) {
+        alert('檔案格式錯誤，請確認是有效的進度備份檔');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// 生成分享連結
+function shareProgress() {
+  var compressed = btoa(encodeURIComponent(JSON.stringify(PROGRESS)));
+  var url = window.location.origin + window.location.pathname + '#progress=' + compressed;
+  // 複製到剪貼簿
+  navigator.clipboard.writeText(url).then(function() {
+    alert('分享連結已複製到剪貼簿！\n貼到另一台裝置的瀏覽器即可匯入進度');
+  }).catch(function() {
+    prompt('請複製以下連結：', url);
+  });
+}
+
+// 從 URL 匯入進度
+function importProgressFromURL() {
+  var hash = window.location.hash;
+  if (hash && hash.indexOf('#progress=') === 0) {
+    try {
+      var compressed = hash.slice(10);
+      var json = decodeURIComponent(atob(compressed));
+      var data = JSON.parse(json);
+      if (confirm('偵測到分享連結！\n匯入此進度將覆蓋現有進度，確定要繼續嗎？')) {
+        PROGRESS = data;
+        saveProgress();
+        window.location.hash = ''; // 清除 hash
+        alert('進度匯入成功！');
+      }
+    } catch (err) {
+      console.error('URL 進度解析失敗:', err);
+    }
+  }
+}
+
 function toggleAutoNext() {
   SETTINGS.autoNext = !SETTINGS.autoNext;
   saveSettings();
@@ -441,6 +519,11 @@ function goScreen(id) {
 function renderHome() {
   goScreen('home');
 }
+
+// 頁面載入時檢查 URL 進度
+window.addEventListener('DOMContentLoaded', function() {
+  importProgressFromURL();
+});
 
 function selectMode(mode) {
   STATE.mode = mode;
