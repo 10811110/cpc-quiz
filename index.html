@@ -601,12 +601,21 @@ function fetchUserInfo(accessToken) {
 
 // Google 登出
 function signOutFromGoogle() {
-  google.accounts.id.disableAutoSelect();
+  // 清除 localStorage
   localStorage.removeItem('googleToken');
   localStorage.removeItem('googleUser');
+  
+  // 清除全域變數
   googleToken = null;
   googleUser = null;
+  
+  // 更新 UI
   updateGoogleUI();
+  
+  // 清除 google-status 顯示
+  var statusEl = document.getElementById('google-status');
+  if (statusEl) statusEl.textContent = '';
+  
   alert('已登出 Google 帳號');
 }
 
