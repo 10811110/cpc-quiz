@@ -626,19 +626,43 @@ function importProgressFromURL() {
   }
 }
 
-// Google Drive 備份功能
+// Google Drive 備份功能（OAuth 2.0 PKCE 流程）
 var GOOGLE_CLIENT_ID = '426710031721-ivj74khe2f46a8t59189356sjahljh9v.apps.googleusercontent.com';
+var GOOGLE_REDIRECT_URI = window.location.origin + window.location.pathname;
 var DRIVE_FOLDER_NAME = 'CPC 題庫練習';
 var BACKUP_FILENAME = 'cpc-quiz-progress.json';
+
+// Google Token 相關（包含 Refresh Token）
 var googleToken = localStorage.getItem('googleToken');
+var googleRefreshToken = localStorage.getItem('googleRefreshToken');
 var googleUser = JSON.parse(localStorage.getItem('googleUser') || 'null');
 var googleTokenExpiry = localStorage.getItem('googleTokenExpiry');
+
+// 生成 PKCE 所需的 code verifier
+function generateCodeVerifier() {
+  var array = new Uint8Array(32);
+  window.crypto.getRandomValues(array);
+  return btoa(String.fromCharCode.apply(null, array))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+// 從 code verifier 生成 code challenge (SHA256 + Base64URL)
+async function generateCodeChallenge(verifier) {
+  var encoder = new TextEncoder();
+  var data = encoder.encode(verifier);
+  var digest = await window.crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
 
 // 檢查 token 是否過期
 function isTokenExpired() {
   if (!googleTokenExpiry) return true;
   var expiry = new Date(googleTokenExpiry);
-  // 提前 5 分鐘視為過期
   return new Date() >= new Date(expiry.getTime() - 5 * 60 * 1000);
 }
 
@@ -649,23 +673,176 @@ function isTokenExpiringSoon() {
   return new Date() >= new Date(expiry.getTime() - 10 * 60 * 1000);
 }
 
+// 處理 OAuth 回調（從 URL 中取得 authorization code）
+function handleAuthCallback() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var code = urlParams.get('code');
+  var error = urlParams.get('error');
+  
+  if (error) {
+    console.error('OAuth 錯誤:', error);
+    alert('登入失敗：' + error);
+    window.history.replaceState({}, '', window.location.pathname);
+    return;
+  }
+  
+  if (code) {
+    // 取得 storage 中的 code verifier
+    var codeVerifier = sessionStorage.getItem('codeVerifier');
+    if (!codeVerifier) {
+      console.error('找不到 code verifier');
+      alert('登入失敗：請重新嘗試');
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+    
+    // 用 code 交換 token
+    exchangeCodeForToken(code, codeVerifier);
+    
+    // 清除 URL 中的參數
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+// 用 authorization code 交換 token（包含 refresh token）
+function exchangeCodeForToken(code, codeVerifier) {
+  fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      code: code,
+      code_verifier: codeVerifier,
+      grant_type: 'authorization_code',
+      redirect_uri: GOOGLE_REDIRECT_URI
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) {
+      console.error('Token 交換失敗:', data.error);
+      alert('登入失敗：' + data.error_description);
+      return;
+    }
+    
+    // 儲存 token
+    googleToken = data.access_token;
+    googleRefreshToken = data.refresh_token || googleRefreshToken; // 可能不會每次都回傳
+    var expiresIn = data.expires_in || 3600;
+    var expiryTime = new Date();
+    expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
+    googleTokenExpiry = expiryTime.toISOString();
+    
+    // 取得用戶資訊
+    return fetchUserInfo(googleToken);
+  })
+  .then(function() {
+    // 儲存到 localStorage
+    localStorage.setItem('googleToken', googleToken);
+    localStorage.setItem('googleRefreshToken', googleRefreshToken);
+    localStorage.setItem('googleTokenExpiry', googleTokenExpiry);
+    localStorage.setItem('googleUser', JSON.stringify(googleUser));
+    
+    alert('Google 帳號綁定成功！\n' + googleUser.email);
+    updateGoogleUI();
+    backupToDrive();
+  })
+  .catch(function(err) {
+    console.error('Token 交換失敗:', err);
+    alert('登入失敗：' + err.message);
+  });
+}
+
+// 用 refresh token 更新 access token
+function refreshAccessToken() {
+  if (!googleRefreshToken) {
+    console.warn('沒有 refresh token，需要重新登入');
+    return Promise.reject(new Error('需要重新登入'));
+  }
+  
+  console.log('🔄 正在刷新 access token...');
+  
+  return fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      refresh_token: googleRefreshToken,
+      grant_type: 'refresh_token'
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) {
+      console.error('Token 刷新失敗:', data.error);
+      // refresh token 也過期了，需要重新登入
+      localStorage.removeItem('googleToken');
+      localStorage.removeItem('googleRefreshToken');
+      localStorage.removeItem('googleTokenExpiry');
+      localStorage.removeItem('googleUser');
+      googleToken = null;
+      googleRefreshToken = null;
+      googleUser = null;
+      googleTokenExpiry = null;
+      throw new Error('登入已過期，請重新登入');
+    }
+    
+    // 更新 token
+    googleToken = data.access_token;
+    var expiresIn = data.expires_in || 3600;
+    var expiryTime = new Date();
+    expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
+    googleTokenExpiry = expiryTime.toISOString();
+    
+    // 儲存新 token
+    localStorage.setItem('googleToken', googleToken);
+    localStorage.setItem('googleTokenExpiry', googleTokenExpiry);
+    
+    console.log('✅ Token 刷新成功');
+    return googleToken;
+  });
+}
+
 // 頁面載入時檢查是否有儲存的登入狀態
 window.addEventListener('DOMContentLoaded', function() {
+  handleAuthCallback(); // 處理 OAuth 回調
+  
   if (googleUser && googleToken && !isTokenExpired()) {
     console.log('✅ 已登入用戶:', googleUser.email);
+    // 如果 token 即將過期，自動刷新
+    if (isTokenExpiringSoon()) {
+      console.log('⏰ Token 即將過期，自動刷新...');
+      refreshAccessToken().then(function() {
+        console.log('✅ Token 刷新完成');
+      }).catch(function(err) {
+        console.warn('Token 刷新失敗:', err.message);
+      });
+    }
     // 如果 token 即將過期，設置定時器提示
     if (isTokenExpiringSoon()) {
       scheduleTokenExpiryWarning();
     }
   } else if (googleUser && googleToken && isTokenExpired()) {
-    console.log('⚠️ Token 已過期，需要重新登入');
-    // 清除過期的 token
-    localStorage.removeItem('googleToken');
-    localStorage.removeItem('googleUser');
-    localStorage.removeItem('googleTokenExpiry');
-    googleToken = null;
-    googleUser = null;
-    googleTokenExpiry = null;
+    console.log('⚠️ Token 已過期，嘗試刷新...');
+    // 嘗試用 refresh token 刷新
+    refreshAccessToken().then(function() {
+      console.log('✅ Token 刷新成功');
+    }).catch(function(err) {
+      console.warn('Token 刷新失敗，需要重新登入:', err.message);
+      // 清除過期的 token
+      localStorage.removeItem('googleToken');
+      localStorage.removeItem('googleRefreshToken');
+      localStorage.removeItem('googleTokenExpiry');
+      localStorage.removeItem('googleUser');
+      googleToken = null;
+      googleRefreshToken = null;
+      googleUser = null;
+      googleTokenExpiry = null;
+    });
   }
 });
 
@@ -692,54 +869,29 @@ function scheduleTokenExpiryWarning() {
   }, warningTime);
 }
 
-// 初始化 Google API
-function initGoogleAuth() {
-  return new Promise(function(resolve, reject) {
-    if (window.gapi && window.google) {
-      resolve();
-      return;
-    }
-    var script1 = document.createElement('script');
-    script1.src = 'https://apis.google.com/js/api.js';
-    script1.onload = function() {
-      var script2 = document.createElement('script');
-      script2.src = 'https://accounts.google.com/gsi/client';
-      script2.onload = function() {
-        gapi.load('client', resolve);
-      };
-      script2.onerror = reject;
-      document.body.appendChild(script2);
-    };
-    script1.onerror = reject;
-    document.body.appendChild(script1);
+// Google 登入（PKCE 流程）
+async function signInWithGoogle() {
+  // 生成 PKCE 參數
+  var codeVerifier = generateCodeVerifier();
+  var codeChallenge = await generateCodeChallenge(codeVerifier);
+  
+  // 儲存 code verifier 到 sessionStorage（回調時需要）
+  sessionStorage.setItem('codeVerifier', codeVerifier);
+  
+  // 建立授權 URL
+  var authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: GOOGLE_REDIRECT_URI,
+    response_type: 'code',
+    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile offline_access',
+    access_type: 'offline',
+    prompt: 'consent', // 強制取得 refresh token
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256'
   });
-}
-
-// Google 登入
-function signInWithGoogle() {
-  initGoogleAuth().then(function() {
-    // 使用 token client 模式，強制重新取得授權
-    google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-      callback: function(tokenResponse) {
-        if (tokenResponse.access_token) {
-          // 取得使用者資訊
-          fetchUserInfo(tokenResponse.access_token);
-        } else if (tokenResponse.error) {
-          console.error('Token 錯誤:', tokenResponse);
-          alert('登入失敗：' + tokenResponse.error);
-        }
-      },
-      error_callback: function(err) {
-        console.error('OAuth 錯誤:', err);
-        alert('登入失敗：' + (err.message || '未知錯誤'));
-      }
-    }).requestAccessToken({ prompt: 'consent' });
-  }).catch(function(err) {
-    console.error('Google API 載入失敗:', err);
-    alert('Google API 載入失敗，請檢查網路連線');
-  });
+  
+  // 跳轉到 Google 授權頁面
+  window.location.href = authUrl;
 }
 
 function fetchUserInfo(accessToken) {
@@ -784,11 +936,13 @@ function fetchUserInfo(accessToken) {
 function signOutFromGoogle() {
   // 清除 localStorage
   localStorage.removeItem('googleToken');
+  localStorage.removeItem('googleRefreshToken');
   localStorage.removeItem('googleUser');
   localStorage.removeItem('googleTokenExpiry');
   
   // 清除全域變數
   googleToken = null;
+  googleRefreshToken = null;
   googleUser = null;
   googleTokenExpiry = null;
   
@@ -832,11 +986,10 @@ function updateGoogleUI() {
   }
 }
 
-// 備份到 Google Drive
+// 備份到 Google Drive（使用 PKCE，支援自動刷新 token）
 function backupToDrive(isAutoBackup) {
   if (!googleToken) {
     if (isAutoBackup) {
-      // 自動備份時不彈出 alert，只記錄 console
       console.warn('☁️ 自動備份跳過：未登入 Google');
       return;
     }
@@ -845,118 +998,110 @@ function backupToDrive(isAutoBackup) {
     return;
   }
   
-  // 檢查 token 是否過期
+  // 檢查 token 是否過期，如果過期則自動刷新
   if (isTokenExpired()) {
-    console.warn('⚠️ Token 已過期，需要重新登入');
-    if (isAutoBackup) {
-      // 自動備份時只更新狀態顯示
-      var statusEl = document.getElementById('google-status');
-      if (statusEl) {
-        statusEl.innerHTML = '<span style="color:#e74c3c">⚠️ 登入已過期，請重新登入</span>';
-      }
-      return;
-    }
-    alert('Google 登入已過期，請重新登入');
-    signInWithGoogle();
-    return;
-  }
-  
-  // 確保 gapi 已載入
-  if (!window.gapi || !gapi.client) {
-    var statusEl = document.getElementById('google-status');
-    if (statusEl) statusEl.textContent = '⏳ 載入 API...';
+    console.log('⏰ Token 已過期，自動刷新...');
     
-    initGoogleAuth().then(function() {
-      backupToDrive(isAutoBackup); // 重新呼叫
-    }).catch(function(err) {
-      console.error('Google API 載入失敗:', err);
-      if (statusEl) statusEl.textContent = '❌ API 載入失敗';
-      if (!isAutoBackup) {
-        alert('Google API 載入失敗，請重新整理頁面');
-      }
-    });
+    if (isAutoBackup) {
+      var statusEl = document.getElementById('google-status');
+      if (statusEl) statusEl.textContent = '🔄 刷新 token...';
+    }
+    
+    // 刷新 token 後再備份
+    refreshAccessToken()
+      .then(function() {
+        console.log('✅ Token 刷新成功，繼續備份...');
+        executeBackup(isAutoBackup);
+      })
+      .catch(function(err) {
+        console.warn('Token 刷新失敗:', err.message);
+        if (!isAutoBackup) {
+          alert('登入已過期，請重新登入');
+          signInWithGoogle();
+        } else {
+          var statusEl = document.getElementById('google-status');
+          if (statusEl) {
+            statusEl.innerHTML = '<span style="color:#e74c3c">⚠️ 請重新登入</span>';
+          }
+        }
+      });
     return;
   }
   
+  // Token 有效，直接執行備份
+  executeBackup(isAutoBackup);
+}
+
+// 執行實際的備份操作（使用 fetch 直接呼叫 Drive API，不需要 gapi）
+function executeBackup(isAutoBackup) {
   var statusEl = document.getElementById('google-status');
   if (statusEl) statusEl.textContent = '⏳ 備份中...';
   
-  // 使用 Google Drive API
-  gapi.client.setToken({ access_token: googleToken });
-  gapi.client.init({
-    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-  }).then(function() {
-    // 尋找或建立備份資料夾
-    return gapi.client.drive.files.list({
-      q: "mimeType='application/vnd.google-apps.folder' and name='" + DRIVE_FOLDER_NAME + "' and trashed=false",
-      spaces: 'drive'
-    });
-  }).then(function(response) {
+  // 尋找或建立備份資料夾
+  fetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent("mimeType='application/vnd.google-apps.folder' and name='" + DRIVE_FOLDER_NAME + "' and trashed=false") + '&spaces=drive', {
+    headers: { 'Authorization': 'Bearer ' + googleToken }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
     var folderId;
-    if (response.result.files.length > 0) {
-      folderId = response.result.files[0].id;
+    if (data.files && data.files.length > 0) {
+      folderId = data.files[0].id;
       return Promise.resolve(folderId);
     } else {
       // 建立資料夾
-      return gapi.client.drive.files.create({
-        resource: {
+      return fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + googleToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           name: DRIVE_FOLDER_NAME,
           mimeType: 'application/vnd.google-apps.folder'
-        }
-      }).then(function(res) {
-        return res.result.id;
-      });
+        })
+      }).then(function(r) { return r.json(); })
+      .then(function(res) { return res.id; });
     }
-  }).then(function(folderId) {
-    // 尋找或建立備份檔案
-    return gapi.client.drive.files.list({
-      q: "name='" + BACKUP_FILENAME + "' and '" + folderId + "' in parents and trashed=false",
-      spaces: 'drive'
-    }).then(function(res) {
-      return { folderId: folderId, existingFile: res.result.files[0] };
+  })
+  .then(function(folderId) {
+    // 尋找現有備份檔案
+    return fetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent("name='" + BACKUP_FILENAME + "' and '" + folderId + "' in parents and trashed=false") + '&spaces=drive', {
+      headers: { 'Authorization': 'Bearer ' + googleToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      return { folderId: folderId, existingFile: res.files && res.files[0] };
     });
-  }).then(function(params) {
-    var blob = new Blob([JSON.stringify(PROGRESS, null, 2)], { type: 'application/json' });
-    var formData = new FormData();
-    
+  })
+  .then(function(params) {
     if (params.existingFile) {
-      // 更新現有檔案 - 不需要指定 parents
-      var metadata = {
-        name: BACKUP_FILENAME
-      };
-      formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-      formData.append('file', blob);
-      
-      // 使用 PATCH 更新檔案內容
+      // 更新現有檔案
       return fetch('https://www.googleapis.com/upload/drive/v3/files/' + params.existingFile.id + '?uploadType=multipart', {
         method: 'PATCH',
-        headers: new Headers({ 'Authorization': 'Bearer ' + googleToken }),
-        body: formData
+        headers: { 'Authorization': 'Bearer ' + googleToken },
+        body: createMultipartBody(PROGRESS, BACKUP_FILENAME)
       });
     } else {
-      // 建立新檔案 - 需要指定 parents
-      var metadata = {
-        name: BACKUP_FILENAME,
-        parents: [params.folderId]
-      };
-      formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-      formData.append('file', blob);
-      
+      // 建立新檔案
       return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
         method: 'POST',
-        headers: new Headers({ 'Authorization': 'Bearer ' + googleToken }),
-        body: formData
+        headers: { 'Authorization': 'Bearer ' + googleToken },
+        body: createMultipartBody(PROGRESS, BACKUP_FILENAME, params.folderId)
       });
     }
-  }).then(function(response) {
+  })
+  .then(function(response) {
     if (response.ok) {
       var now = new Date();
       var timeStr = now.toLocaleString('zh-TW');
       if (statusEl) statusEl.textContent = '✅ 最後備份：' + timeStr;
       localStorage.setItem('lastBackup', timeStr);
-      alert('備份成功！\\n檔案已儲存至 Google Drive / ' + DRIVE_FOLDER_NAME + '/' + BACKUP_FILENAME);
+      if (!isAutoBackup) {
+        alert('備份成功！\n檔案已儲存至 Google Drive / ' + DRIVE_FOLDER_NAME + '/' + BACKUP_FILENAME);
+      } else {
+        console.log('✅ 自動備份成功 (' + timeStr + ')');
+      }
     } else {
-      // 嘗試解析錯誤訊息
       return response.json().then(function(errData) {
         var errMsg = errData.error ? errData.error.message : '備份失敗';
         throw new Error(errMsg);
@@ -964,25 +1109,46 @@ function backupToDrive(isAutoBackup) {
         throw new Error('備份失敗 (HTTP ' + response.status + ')');
       });
     }
-  }).catch(function(err) {
+  })
+  .catch(function(err) {
     console.error('備份失敗:', err);
     if (statusEl) statusEl.textContent = '❌ 備份失敗';
     
-    // 提供更詳細的錯誤訊息
     var userMsg = err.message;
     if (userMsg.indexOf('insufficientFilePermissions') >= 0) {
       userMsg = '權限不足，請重新登入並授權 Drive 權限';
-    } else if (userMsg.indexOf('cannotModifySharedDrive') >= 0) {
-      userMsg = '無法備份到共用硬碟';
     } else if (userMsg.indexOf('storageQuotaExceeded') >= 0) {
       userMsg = 'Google Drive 空間已滿';
     }
     
-    alert('備份失敗：' + userMsg + '\\n\\n詳細錯誤：' + err.message);
+    if (!isAutoBackup) {
+      alert('備份失敗：' + userMsg);
+    }
   });
 }
 
-// 從 Google Drive 恢復
+// 建立 multipart body for Drive API upload
+function createMultipartBody(progress, filename, folderId) {
+  var boundary = '-------314159265358979323846';
+  var delimiter = '\r\n--' + boundary + '\r\n';
+  var close_delim = '\r\n--' + boundary + '--';
+  
+  var metadata = folderId 
+    ? { name: filename, parents: [folderId] }
+    : { name: filename };
+  
+  var body = delimiter + 'Content-Type: application/json\r\n\r\n' +
+             JSON.stringify(metadata) +
+             delimiter + 'Content-Type: application/json\r\n\r\n' +
+             JSON.stringify(progress) +
+             close_delim;
+  
+  return body;
+}
+  });
+}
+
+// 從 Google Drive 恢復（使用 fetch 直接呼叫 API）
 function restoreFromDrive() {
   if (!googleToken) {
     alert('請先綁定 Google 帳號');
@@ -997,41 +1163,51 @@ function restoreFromDrive() {
   var statusEl = document.getElementById('google-status');
   if (statusEl) statusEl.textContent = '⏳ 恢復中...';
   
-  gapi.client.setToken({ access_token: googleToken });
-  gapi.client.init({
-    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-  }).then(function() {
-    return gapi.client.drive.files.list({
-      q: "mimeType='application/vnd.google-apps.folder' and name='" + DRIVE_FOLDER_NAME + "' and trashed=false",
-      spaces: 'drive'
-    });
-  }).then(function(response) {
-    if (response.result.files.length === 0) {
+  // 尋找備份資料夾
+  fetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent("mimeType='application/vnd.google-apps.folder' and name='" + DRIVE_FOLDER_NAME + "' and trashed=false") + '&spaces=drive', {
+    headers: { 'Authorization': 'Bearer ' + googleToken }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.files || data.files.length === 0) {
       throw new Error('找不到備份資料夾');
     }
-    var folderId = response.result.files[0].id;
-    return gapi.client.drive.files.list({
-      q: "name='" + BACKUP_FILENAME + "' and '" + folderId + "' in parents and trashed=false",
-      spaces: 'drive'
+    var folderId = data.files[0].id;
+    
+    // 尋找備份檔案
+    return fetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent("name='" + BACKUP_FILENAME + "' and '" + folderId + "' in parents and trashed=false") + '&spaces=drive', {
+      headers: { 'Authorization': 'Bearer ' + googleToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (!res.files || res.files.length === 0) {
+        throw new Error('找不到備份檔案');
+      }
+      return res.files[0].id;
     });
-  }).then(function(response) {
-    if (response.result.files.length === 0) {
-      throw new Error('找不到備份檔案');
-    }
-    var fileId = response.result.files[0].id;
-    return gapi.client.drive.files.get({
-      fileId: fileId,
-      alt: 'media'
+  })
+  .then(function(fileId) {
+    // 下載檔案內容
+    return fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', {
+      headers: { 'Authorization': 'Bearer ' + googleToken }
+    })
+    .then(function(r) {
+      if (!r.ok) {
+        throw new Error('下載失敗 (HTTP ' + r.status + ')');
+      }
+      return r.json();
     });
-  }).then(function(response) {
-    PROGRESS = response.result;
+  })
+  .then(function(data) {
+    PROGRESS = data;
     saveProgress();
     var now = new Date();
     var timeStr = now.toLocaleString('zh-TW');
     if (statusEl) statusEl.textContent = '✅ 最後恢復：' + timeStr;
     alert('進度恢復成功！');
-    showProgress(); // 重新顯示進度視窗
-  }).catch(function(err) {
+    showProgress();
+  })
+  .catch(function(err) {
     console.error('恢復失敗:', err);
     if (statusEl) statusEl.textContent = '❌ 恢復失敗';
     alert('恢復失敗：' + err.message);
