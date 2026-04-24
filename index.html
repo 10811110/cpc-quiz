@@ -195,6 +195,10 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
         <button onclick="importProgress()" style="padding:10px;background:#2ecc71;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">📥 匯入</button>
         <button onclick="shareProgress()" style="padding:10px;background:#9b59b6;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">🔗 分享</button>
       </div>
+      <div style="margin-top:20px;padding-top:20px;border-top:2px solid #ecf0f1">
+        <h4 style="margin-bottom:12px;font-size:1rem;color:#2c3e50">☁️ Google Drive 備份</h4>
+        <div id="google-auth-container"></div>
+      </div>
       <button onclick="closeProgress()" style="width:100%;margin-top:16px;padding:12px;background:#e74c3c;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer">關閉</button>
     </div>
   </div>
@@ -304,6 +308,9 @@ function updateProgress(src, chId, totalQuestions, answeredCount) {
 function showProgress() {
   // 關閉設定視窗
   document.getElementById('settings-modal').style.display = 'none';
+  
+  // 初始化 Google UI
+  updateGoogleUI();
   
   var html = '';
   var totalAnswered = 0;
@@ -503,6 +510,248 @@ function importProgressFromURL() {
       console.error('URL 進度解析失敗:', err);
     }
   }
+}
+
+// Google Drive 備份功能
+var GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE'; // 請替換為你的 Google OAuth Client ID
+var DRIVE_FOLDER_NAME = 'CPC 題庫練習';
+var BACKUP_FILENAME = 'cpc-quiz-progress.json';
+var googleToken = localStorage.getItem('googleToken');
+var googleUser = JSON.parse(localStorage.getItem('googleUser') || 'null');
+
+// 初始化 Google API
+function initGoogleAuth() {
+  return new Promise(function(resolve, reject) {
+    if (window.gapi && window.google) {
+      resolve();
+      return;
+    }
+    var script1 = document.createElement('script');
+    script1.src = 'https://apis.google.com/js/api.js';
+    script1.onload = function() {
+      var script2 = document.createElement('script');
+      script2.src = 'https://accounts.google.com/gsi/client';
+      script2.onload = function() {
+        gapi.load('client', resolve);
+      };
+      script2.onerror = reject;
+      document.body.appendChild(script2);
+    };
+    script1.onerror = reject;
+    document.body.appendChild(script1);
+  });
+}
+
+// Google 登入
+function signInWithGoogle() {
+  initGoogleAuth().then(function() {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleResponse,
+      scope: 'https://www.googleapis.com/auth/drive.file'
+    });
+    google.accounts.id.prompt();
+  }).catch(function(err) {
+    console.error('Google API 載入失敗:', err);
+    alert('Google API 載入失敗，請檢查網路連線');
+  });
+}
+
+function handleGoogleResponse(response) {
+  if (response.credential) {
+    // 解碼 JWT 取得使用者資訊
+    var userInfo = JSON.parse(atob(response.credential.split('.')[1]));
+    googleUser = {
+      name: userInfo.name,
+      email: userInfo.email,
+      picture: userInfo.picture
+    };
+    localStorage.setItem('googleUser', JSON.stringify(googleUser));
+    localStorage.setItem('googleToken', response.credential);
+    alert('Google 帳號綁定成功！\n' + userInfo.email);
+    updateGoogleUI();
+    // 首次登入自動備份
+    backupToDrive();
+  }
+}
+
+// Google 登出
+function signOutFromGoogle() {
+  google.accounts.id.disableAutoSelect();
+  localStorage.removeItem('googleToken');
+  localStorage.removeItem('googleUser');
+  googleToken = null;
+  googleUser = null;
+  updateGoogleUI();
+  alert('已登出 Google 帳號');
+}
+
+// 更新 Google UI 狀態
+function updateGoogleUI() {
+  var container = document.getElementById('google-auth-container');
+  if (!container) return;
+  
+  if (googleUser) {
+    container.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:10px">' +
+      '<img src="'+googleUser.picture+'" style="width:32px;height:32px;border-radius:50%" alt="Google">' +
+      '<div style="flex:1"><div style="font-size:0.85rem;font-weight:600;color:#2c3e50">'+escHtml(googleUser.name)+'</div>' +
+      '<div style="font-size:0.75rem;color:#7f8c8d">'+escHtml(googleUser.email)+'</div></div>' +
+      '<button onclick="signOutFromGoogle()" style="padding:6px 12px;background:#e74c3c;color:white;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer">登出</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">' +
+      '<button onclick="backupToDrive()" style="padding:10px;background:#3498db;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer">☁️ 立即備份</button>' +
+      '<button onclick="restoreFromDrive()" style="padding:10px;background:#2ecc71;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer">☁️ 恢復進度</button>' +
+      '</div>' +
+      '<div id="google-status" style="margin-top:10px;font-size:0.75rem;color:#7f8c8d;text-align:center"></div>';
+  } else {
+    container.innerHTML = '<button onclick="signInWithGoogle()" style="width:100%;padding:12px;background:#4285f4;color:white;border:none;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">' +
+      '<svg width="20" height="20" viewBox="0 0 20 20"><path fill="#fff" d="M10 20a10 10 0 1 0 0-20 10 10 0 0 0 0 20zm.85-17.22v7.3h4.93l-.44 2.85h-4.5v4.64h-2.6v-4.64H3.5v-2.85h4.73V5.21L10.85 2.78z"/></svg>' +
+      '用 Google 帳號備份</button>' +
+      '<div style="margin-top:10px;font-size:0.75rem;color:#7f8c8d;text-align:center">備份將儲存至您的 Google Drive</div>';
+  }
+}
+
+// 備份到 Google Drive
+function backupToDrive() {
+  if (!googleToken) {
+    alert('請先綁定 Google 帳號');
+    signInWithGoogle();
+    return;
+  }
+  
+  var statusEl = document.getElementById('google-status');
+  if (statusEl) statusEl.textContent = '⏳ 備份中...';
+  
+  // 使用 Google Drive API
+  gapi.client.init({
+    apiKey: GOOGLE_CLIENT_ID.replace('.apps.googleusercontent.com', ''),
+    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+  }).then(function() {
+    // 尋找或建立備份資料夾
+    return gapi.client.drive.files.list({
+      q: "mimeType='application/vnd.google-apps.folder' and name='" + DRIVE_FOLDER_NAME + "' and trashed=false",
+      spaces: 'drive'
+    });
+  }).then(function(response) {
+    var folderId;
+    if (response.result.files.length > 0) {
+      folderId = response.result.files[0].id;
+      return Promise.resolve(folderId);
+    } else {
+      // 建立資料夾
+      return gapi.client.drive.files.create({
+        resource: {
+          name: DRIVE_FOLDER_NAME,
+          mimeType: 'application/vnd.google-apps.folder'
+        }
+      }).then(function(res) {
+        return res.result.id;
+      });
+    }
+  }).then(function(folderId) {
+    // 尋找或建立備份檔案
+    return gapi.client.drive.files.list({
+      q: "name='" + BACKUP_FILENAME + "' and '" + folderId + "' in parents and trashed=false",
+      spaces: 'drive'
+    }).then(function(res) {
+      return { folderId: folderId, existingFile: res.result.files[0] };
+    });
+  }).then(function(params) {
+    var blob = new Blob([JSON.stringify(PROGRESS, null, 2)], { type: 'application/json' });
+    var formData = new FormData();
+    var metadata = {
+      name: BACKUP_FILENAME,
+      parents: [params.folderId]
+    };
+    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    formData.append('file', blob);
+    
+    if (params.existingFile) {
+      // 更新現有檔案
+      return fetch('https://www.googleapis.com/upload/drive/v3/files/' + params.existingFile.id + '?uploadType=multipart', {
+        method: 'PATCH',
+        headers: new Headers({ 'Authorization': 'Bearer ' + googleToken }),
+        body: formData
+      });
+    } else {
+      // 建立新檔案
+      return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: new Headers({ 'Authorization': 'Bearer ' + googleToken }),
+        body: formData
+      });
+    }
+  }).then(function(response) {
+    if (response.ok) {
+      var now = new Date();
+      var timeStr = now.toLocaleString('zh-TW');
+      if (statusEl) statusEl.textContent = '✅ 最後備份：' + timeStr;
+      localStorage.setItem('lastBackup', timeStr);
+      alert('備份成功！\n檔案已儲存至 Google Drive / ' + DRIVE_FOLDER_NAME + '/' + BACKUP_FILENAME);
+    } else {
+      throw new Error('備份失敗');
+    }
+  }).catch(function(err) {
+    console.error('備份失敗:', err);
+    if (statusEl) statusEl.textContent = '❌ 備份失敗';
+    alert('備份失敗：' + err.message);
+  });
+}
+
+// 從 Google Drive 恢復
+function restoreFromDrive() {
+  if (!googleToken) {
+    alert('請先綁定 Google 帳號');
+    signInWithGoogle();
+    return;
+  }
+  
+  if (!confirm('從 Google Drive 恢復進度將覆蓋現有進度，確定要繼續嗎？')) {
+    return;
+  }
+  
+  var statusEl = document.getElementById('google-status');
+  if (statusEl) statusEl.textContent = '⏳ 恢復中...';
+  
+  gapi.client.init({
+    apiKey: GOOGLE_CLIENT_ID.replace('.apps.googleusercontent.com', ''),
+    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+  }).then(function() {
+    return gapi.client.drive.files.list({
+      q: "mimeType='application/vnd.google-apps.folder' and name='" + DRIVE_FOLDER_NAME + "' and trashed=false",
+      spaces: 'drive'
+    });
+  }).then(function(response) {
+    if (response.result.files.length === 0) {
+      throw new Error('找不到備份資料夾');
+    }
+    var folderId = response.result.files[0].id;
+    return gapi.client.drive.files.list({
+      q: "name='" + BACKUP_FILENAME + "' and '" + folderId + "' in parents and trashed=false",
+      spaces: 'drive'
+    });
+  }).then(function(response) {
+    if (response.result.files.length === 0) {
+      throw new Error('找不到備份檔案');
+    }
+    var fileId = response.result.files[0].id;
+    return gapi.client.drive.files.get({
+      fileId: fileId,
+      alt: 'media'
+    });
+  }).then(function(response) {
+    PROGRESS = response.result;
+    saveProgress();
+    var now = new Date();
+    var timeStr = now.toLocaleString('zh-TW');
+    if (statusEl) statusEl.textContent = '✅ 最後恢復：' + timeStr;
+    alert('進度恢復成功！');
+    showProgress(); // 重新顯示進度視窗
+  }).catch(function(err) {
+    console.error('恢復失敗:', err);
+    if (statusEl) statusEl.textContent = '❌ 恢復失敗';
+    alert('恢復失敗：' + err.message);
+  });
 }
 
 function toggleAutoNext() {
