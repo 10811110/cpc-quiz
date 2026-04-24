@@ -117,5 +117,40 @@
     "total_questions": 52,
     "file": "chapter17.json",
     "note": ""
+  },
+  {
+    "id": 18,
+    "chapter": "技術士第 1 章（1-20 題）",
+    "total_questions": 20,
+    "file": "chapter_zhian_1.json",
+    "note": "技術士技能檢定"
+  },
+  {
+    "id": 19,
+    "chapter": "技術士第 2 章（21-40 題）",
+    "total_questions": 20,
+    "file": "chapter_zhian_2.json",
+    "note": "技術士技能檢定"
+  },
+  {
+    "id": 20,
+    "chapter": "技術士第 3 章（41-60 題）",
+    "total_questions": 20,
+    "file": "chapter_zhian_3.json",
+    "note": "技術士技能檢定"
+  },
+  {
+    "id": 21,
+    "chapter": "技術士第 4 章（61-80 題）",
+    "total_questions": 20,
+    "file": "chapter_zhian_4.json",
+    "note": "技術士技能檢定"
+  },
+  {
+    "id": 22,
+    "chapter": "技術士第 5 章（81-100 題）",
+    "total_questions": 20,
+    "file": "chapter_zhian_5.json",
+    "note": "技術士技能檢定"
   }
 ]
