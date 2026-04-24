@@ -726,10 +726,6 @@ function openMistakeBook() {
   for (var src in MISTAKE_BOOK) {
     for (var k in MISTAKE_BOOK[src]) total++;
   }
-  if (total === 0) {
-    alert('錯題本目前是空的，先去練習或考試答錯題目會自動加入！');
-    return;
-  }
   // 選擇要練習哪個題庫的錯題
   var html = '<div class="card-grid">';
   if (MISTAKE_BOOK['luo']) {
@@ -749,6 +745,10 @@ function openMistakeBook() {
       '</div>';
   }
   html += '</div>';
+  // 顯示提示或清空按鈕
+  if (total === 0) {
+    html += '<p style="text-align:center;color:#666;margin:20px 0;">錯題本目前是空的，先去練習或考試答錯題目會自動加入！</p>';
+  }
   // 新增清空按鈕
   html += '<div style="margin-top:20px;text-align:center;">' +
     '<button onclick="clearMistakeBook()" style="background:#dc3545;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:1rem;cursor:pointer;">🗑️ 清空錯題本</button>' +
