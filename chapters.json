@@ -117,12 +117,5 @@
     "total_questions": 52,
     "file": "chapter17.json",
     "note": ""
-  },
-  {
-    "id": 18,
-    "chapter": "技術士技能檢定職業安全衛生共同科目",
-    "total_questions": 100,
-    "file": "chapter_zhian.json",
-    "note": "勞動部勞動力發展署技能檢定學科測試參考資料"
   }
 ]

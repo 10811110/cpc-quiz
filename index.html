@@ -97,6 +97,11 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
         <h2>甲業題庫</h2>
         <p>1011 題（20 章）</p>
       </div>
+      <div class="mode-card" onclick="selectSource('zhian')">
+        <div style="font-size:2rem">📙</div>
+        <h2>技術士技能檢定<br>職業安全衛生共同科目</h2>
+        <p>100 題</p>
+      </div>
       <div class="mode-card" onclick="openMistakeBook()" style="border-color:#f39c12">
         <div style="font-size:2rem">📕</div>
         <h2>錯題本</h2>
@@ -172,7 +177,7 @@ var SETTINGS = JSON.parse(localStorage.getItem('settings') || '{"autoNext":false
 function saveMistakeBook() { localStorage.setItem('mistakeBook', JSON.stringify(MISTAKE_BOOK)); }
 function saveExamHistory() { localStorage.setItem('examHistory', JSON.stringify(EXAM_HISTORY)); }
 function saveSettings() { localStorage.setItem('settings', JSON.stringify(SETTINGS)); }
-var SOURCE_NAMES = {"luo":"一般業題庫 · 725 題","jia":"甲業題庫 · 1011 題"};
+var SOURCE_NAMES = {"luo":"一般業題庫 · 725 題","jia":"甲業題庫 · 1011 題","zhian":"技術士題庫 · 100 題"};
 var STATE = {screen:'home',mode:null,chId:null,questions:[],current:0,answers:[],done:false};
   CURRENT_SOURCE = null;
 var NAMES = ["", "第一章 企業經營風險與安全衛生", "第二章 職業安全衛生相關法規", "第三章 職業安全衛生概論", "第四章 職業安全衛生管理系統", "第五章 風險評估", "第六章 承攬管理", "第七章 採購及變更管理", "第八章 緊急應變管理", "第九章 墜落危害預防管理實務", "第十章 機械安全管理實務", "第十一章 火災爆炸危害預防管理實務", "第十二章 感電危害預防管理實務", "第十三章 倒塌崩塌危害預防管理實務", "第十四章 化學性危害預防管理實務", "第十五章 物理性危害預防管理實務", "第十六章 職場健康管理實務", "第十七章 職業災害調查處理與統計"];
@@ -268,6 +273,21 @@ function selectMode(mode) {
     var d2 = document.getElementById('quizData2');
     window.JIA_DATA = JSON.parse(d2.textContent); // 使用獨立變數儲存甲業數據
     proceedMode();
+  } else if (CURRENT_SOURCE === 'zhian') {
+    // 技術士題庫：只有一章，直接載入
+    loadChapterQuestions('chapter_zhian.json').then(function(qs) {
+      window.ZHIAN_DATA = {
+        "1": {
+          "id": 1,
+          "chapter": "技術士技能檢定職業安全衛生共同科目",
+          "total_questions": 100,
+          "file": "chapter_zhian.json",
+          "note": "勞動部勞動力發展署技能檢定學科測試參考資料",
+          "questions": qs
+        }
+      };
+      proceedMode();
+    });
   } else {
     proceedMode();
   }
@@ -279,7 +299,7 @@ function proceedMode() {
     var src = CURRENT_SOURCE;
     var files = src === 'luo' 
       ? CHAPTERS // 一般業用 chapters.json
-      : window.JIA_DATA; // 甲業用內嵌
+      : (src === 'jia' ? window.JIA_DATA : window.ZHIAN_DATA); // 甲業或技術士用內嵌
     
     // 載入所有題目
     var loadPromises = [];
@@ -302,7 +322,7 @@ function proceedMode() {
       var doneKeys = EXAM_HISTORY[src] || [];
       var doneSet = {};
       doneKeys.forEach(function(k){ doneSet[k] = true; });
-      var totalPool = src === 'luo' ? 725 : 1011;
+      var totalPool = src === 'luo' ? 725 : (src === 'jia' ? 1011 : 100);
       var remaining = doneKeys.length >= totalPool
         ? [] : all.filter(function(q){ return !doneSet[q._ch+'_'+q.id]; });
       if (remaining.length < 80) {
@@ -337,11 +357,27 @@ function proceedMode() {
         '<div class="ch-card-q">'+ch.total_questions+' 題'+(ch.note?' · '+escHtml(ch.note):'')+'</div>'+
         '</div>';
     });
+  } else if (src === 'zhian') {
+    // 技術士題庫：只有一章，直接進入練習
+    STATE.chId = '1';
+    loadChapterQuestions('chapter_zhian.json').then(function(qs) {
+      qs.forEach(function(q) { q._ch = '1'; });
+      STATE.questions = qs;
+      STATE.current = 0;
+      STATE.answers = [];
+      STATE.done = false;
+      document.getElementById('nav-row').style.display = 'flex';
+      document.getElementById('result-area').style.display = 'none';
+      goScreen('quiz-screen');
+      renderQuestion();
+    });
+    return;
   } else {
     // 甲業 20 章
-    var keys = Object.keys(CHAPTERS).sort();
+    var data = src === 'jia' ? window.JIA_DATA : window.ZHIAN_DATA;
+    var keys = Object.keys(data).sort();
     keys.forEach(function(k) {
-      var ch = CHAPTERS[k];
+      var ch = data[k];
       html += '<div class="chapter-card" onclick="selectChapter(\''+k+'\')">' +
         '<div class="ch-card-num">'+escHtml(ch.chapter)+'</div>' +
         '<div class="ch-card-title">'+ch.total_questions+' 題</div>' +
