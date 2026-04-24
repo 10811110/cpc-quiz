@@ -573,17 +573,24 @@ function initGoogleAuth() {
 // Google 登入
 function signInWithGoogle() {
   initGoogleAuth().then(function() {
-    // 使用 token client 模式，避免 cookie 問題
+    // 使用 token client 模式，強制重新取得授權
     google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/drive.file',
+      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
       callback: function(tokenResponse) {
         if (tokenResponse.access_token) {
           // 取得使用者資訊
           fetchUserInfo(tokenResponse.access_token);
+        } else if (tokenResponse.error) {
+          console.error('Token 錯誤:', tokenResponse);
+          alert('登入失敗：' + tokenResponse.error);
         }
+      },
+      error_callback: function(err) {
+        console.error('OAuth 錯誤:', err);
+        alert('登入失敗：' + (err.message || '未知錯誤'));
       }
-    }).requestAccessToken();
+    }).requestAccessToken({ prompt: 'consent' });
   }).catch(function(err) {
     console.error('Google API 載入失敗:', err);
     alert('Google API 載入失敗，請檢查網路連線');
