@@ -348,19 +348,18 @@ function proceedMode() {
         '</div>';
     });
   } else if (src === 'zhian') {
-    // 技術士題庫：只有一章，直接進入練習
-    STATE.chId = '1';
-    loadChapterQuestions('chapter_zhian.json').then(function(qs) {
-      qs.forEach(function(q) { q._ch = '1'; });
-      STATE.questions = qs;
-      STATE.current = 0;
-      STATE.answers = [];
-      STATE.done = false;
-      document.getElementById('nav-row').style.display = 'flex';
-      document.getElementById('result-area').style.display = 'none';
-      goScreen('quiz-screen');
-      renderQuestion();
-    });
+    // 技術士題庫：只有一章，直接從內嵌數據載入
+    var zhianData = window.ZHIAN_DATA['1'];
+    var qs = zhianData.questions;
+    qs.forEach(function(q) { q._ch = '1'; });
+    STATE.questions = qs;
+    STATE.current = 0;
+    STATE.answers = [];
+    STATE.done = false;
+    document.getElementById('nav-row').style.display = 'flex';
+    document.getElementById('result-area').style.display = 'none';
+    goScreen('quiz-screen');
+    renderQuestion();
     return;
   } else {
     // 甲業 20 章
