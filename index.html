@@ -580,9 +580,9 @@ function fetchUserInfo(accessToken) {
   .then(function(r) { return r.json(); })
   .then(function(userInfo) {
     googleUser = {
-      name: userInfo.name,
-      email: userInfo.email,
-      picture: userInfo.picture,
+      name: userInfo.name || 'User',
+      email: userInfo.email || '',
+      picture: userInfo.picture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userInfo.name || 'User') + '&background=4285f4&color=fff&size=32',
       token: accessToken
     };
     googleToken = accessToken;
@@ -629,11 +629,12 @@ function updateGoogleUI() {
   if (!container) return;
   
   if (googleUser) {
+    var avatarUrl = googleUser.picture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(googleUser.name || 'User') + '&background=4285f4&color=fff&size=32';
     container.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:10px">' +
-      '<img src="'+googleUser.picture+'" style="width:32px;height:32px;border-radius:50%" alt="Google">' +
-      '<div style="flex:1"><div style="font-size:0.85rem;font-weight:600;color:#2c3e50">'+escHtml(googleUser.name)+'</div>' +
-      '<div style="font-size:0.75rem;color:#7f8c8d">'+escHtml(googleUser.email)+'</div></div>' +
-      '<button onclick="signOutFromGoogle()" style="padding:6px 12px;background:#e74c3c;color:white;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer">登出</button>' +
+      '<img src="'+avatarUrl+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover" alt="Google" onerror="this.src=\'https://ui-avatars.com/api/?name=' + encodeURIComponent(googleUser.name || 'U') + '&background=4285f4&color=fff&size=32\'">' +
+      '<div style="flex:1;min-width:0"><div style="font-size:0.85rem;font-weight:600;color:#2c3e50;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(googleUser.name)+'</div>' +
+      '<div style="font-size:0.75rem;color:#7f8c8d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(googleUser.email)+'</div></div>' +
+      '<button onclick="signOutFromGoogle()" style="padding:6px 12px;background:#e74c3c;color:white;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;white-space:nowrap">登出</button>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">' +
       '<button onclick="backupToDrive()" style="padding:10px;background:#3498db;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer">☁️ 立即備份</button>' +
