@@ -748,9 +748,17 @@ function openMistakeBook() {
       '<p>'+jiaCount+' 題</p>' +
       '</div>';
   }
-  html += '</div>';
-  document.getElementById('chapter-list').innerHTML = html;
-  goScreen('chapter-select');
+  html += '</div>';\n  // 新增清空按鈕\n  html += '<div style=\"margin-top:20px;text-align:center;\">' +\n    '<button onclick=\"clearMistakeBook()\" style=\"background:#dc3545;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:1rem;cursor:pointer;\">🗑️ 清空錯題本</button>' +\n    '</div>';\n  document.getElementById('chapter-list').innerHTML = html;\n  goScreen('chapter-select');
+}
+
+function clearMistakeBook() {
+  if (confirm('確定要清空所有錯題記錄嗎？此操作無法復原！')) {
+    MISTAKE_BOOK = {};
+    saveMistakeBook();
+    alert('錯題本已清空！');
+    goScreen('home');
+    updateMistakeCount();
+  }
 }
 
 function startMistakePractice(src) {
