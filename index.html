@@ -181,6 +181,17 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
         </div>
         <button onclick="showProgress()" style="padding:8px 16px;background:#3498db;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">查看</button>
       </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid #ecf0f1">
+        <div>
+          <div style="font-weight:600;color:#2c3e50">☁️ 自動備份</div>
+          <div style="font-size:.85rem;color:#7f8c8d;margin-top:4px">每 30 分鐘自動備份進度到 Google Drive</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:50px;height:26px">
+          <input type="checkbox" id="autoBackupToggle" onchange="toggleAutoBackup()" style="opacity:0;width:0;height:0">
+          <span id="autoBackupSwitch" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.3s;border-radius:26px"></span>
+          <span id="autoBackupDot" style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;transition:.3s;border-radius:50%"></span>
+        </label>
+      </div>
       <button onclick="toggleSettings()" style="width:100%;margin-top:16px;padding:12px;background:#e74c3c;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer">關閉</button>
     </div>
   </div>
@@ -208,7 +219,7 @@ var CHAPTERS = null;
 var CURRENT_SOURCE = null;
 var EXAM_HISTORY = JSON.parse(localStorage.getItem('examHistory') || '{}');
 var MISTAKE_BOOK = JSON.parse(localStorage.getItem('mistakeBook') || '{}');
-var SETTINGS = JSON.parse(localStorage.getItem('settings') || '{"autoNext":false}');
+var SETTINGS = JSON.parse(localStorage.getItem('settings') || '{"autoNext":false,"autoBackup":false}');
 var PROGRESS = JSON.parse(localStorage.getItem('progress') || '{}');
 function saveMistakeBook() { localStorage.setItem('mistakeBook', JSON.stringify(MISTAKE_BOOK)); }
 function saveExamHistory() { localStorage.setItem('examHistory', JSON.stringify(EXAM_HISTORY)); }
@@ -288,12 +299,52 @@ function toggleSettings() {
     updateThemeToggleStyle(isDark);
     document.getElementById('autoNextToggle').checked = SETTINGS.autoNext;
     updateToggleStyle(SETTINGS.autoNext);
+    document.getElementById('autoBackupToggle').checked = SETTINGS.autoBackup || false;
+    updateAutoBackupToggleStyle(SETTINGS.autoBackup || false);
   }
 }
 
 function updateToggleStyle(isOn) {
   document.getElementById('autoNextSwitch').style.background = isOn ? '#27ae60' : '#ccc';
   document.getElementById('autoNextDot').style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+}
+
+function updateAutoBackupToggleStyle(isOn) {
+  document.getElementById('autoBackupSwitch').style.background = isOn ? '#27ae60' : '#ccc';
+  document.getElementById('autoBackupDot').style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+}
+
+// 自動備份功能
+var autoBackupInterval = null;
+
+function toggleAutoBackup() {
+  SETTINGS.autoBackup = !SETTINGS.autoBackup;
+  saveSettings();
+  updateAutoBackupToggleStyle(SETTINGS.autoBackup);
+  
+  if (SETTINGS.autoBackup) {
+    // 啟動自動備份：每 30 分鐘執行一次
+    autoBackupInterval = setInterval(function() {
+      if (googleToken) {
+        console.log('🔄 自動備份中...');
+        backupToDrive();
+      }
+    }, 30 * 60 * 1000); // 30 分鐘
+    
+    // 立即執行一次備份（如果已登入）
+    if (googleToken) {
+      backupToDrive();
+    }
+    
+    alert('☁️ 自動備份已開啟！\n每 30 分鐘自動備份進度到 Google Drive');
+  } else {
+    // 停止自動備份
+    if (autoBackupInterval) {
+      clearInterval(autoBackupInterval);
+      autoBackupInterval = null;
+    }
+    alert('☁️ 自動備份已關閉');
+  }
 }
 
 // 進度追蹤功能
@@ -885,9 +936,29 @@ function renderHome() {
   goScreen('home');
 }
 
-// 頁面載入時檢查 URL 進度
+// 頁面載入時檢查 URL 進度並恢復自動備份
 window.addEventListener('DOMContentLoaded', function() {
   importProgressFromURL();
+  
+  // 恢復自動備份定時器（如果已開啟且已登入）
+  if (SETTINGS.autoBackup) {
+    var token = localStorage.getItem('googleToken');
+    if (token) {
+      googleToken = token;
+      googleUser = JSON.parse(localStorage.getItem('googleUser') || 'null');
+      googleTokenExpiry = localStorage.getItem('googleTokenExpiry');
+      
+      // 啟動自動備份定時器
+      autoBackupInterval = setInterval(function() {
+        if (googleToken) {
+          console.log('🔄 自動備份中...');
+          backupToDrive();
+        }
+      }, 30 * 60 * 1000); // 30 分鐘
+      
+      console.log('☁️ 自動備份已恢復（每 30 分鐘）');
+    }
+  }
 });
 
 function selectMode(mode) {
