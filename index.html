@@ -612,6 +612,10 @@ function signOutFromGoogle() {
 
 // 更新 Google UI 狀態
 function updateGoogleUI() {
+  // 每次都從 localStorage 讀取最新狀態
+  googleToken = localStorage.getItem('googleToken');
+  googleUser = JSON.parse(localStorage.getItem('googleUser') || 'null');
+  
   var container = document.getElementById('google-auth-container');
   if (!container) return;
   
