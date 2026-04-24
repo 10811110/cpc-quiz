@@ -297,37 +297,52 @@ function proceedMode() {
     // 大考模式：從全部題目抽 80 題
     var src = CURRENT_SOURCE;
     
-    // 技術士題庫：直接從內嵌數據讀取題目
+    // 技術士題庫：動態載入所有章節題目
     if (src === 'zhian') {
       // 先移除舊的解析區塊
       var oldAnalysis = document.querySelector('.analysis-block');
       if (oldAnalysis) oldAnalysis.remove();
       
-      var zhianData = window.ZHIAN_DATA['1'];
-      var qs = zhianData.questions;
-      qs.forEach(function(q) { q._ch = '1'; });
-      shuffleArray(qs);
-      var doneKeys = EXAM_HISTORY[src] || [];
-      var doneSet = {};
-      doneKeys.forEach(function(k){ doneSet[k] = true; });
-      var totalPool = 100;
-      var remaining = doneKeys.length >= totalPool
-        ? [] : qs.filter(function(q){ return !doneSet['1_'+q.id]; });
-      if (remaining.length < 80) {
-        EXAM_HISTORY[src] = [];
-        doneSet = {};
-        remaining = qs;
+      // 載入所有 5 章題目
+      var promises = [];
+      for (var id in window.ZHIAN_DATA) {
+        var chapterData = window.ZHIAN_DATA[id];
+        promises.push(
+          fetch(chapterData.file)
+            .then(r => r.json())
+            .then(data => {
+              var qs = data.questions;
+              qs.forEach(function(q) { q._ch = id; });
+              return qs;
+            })
+        );
       }
-      qs = remaining.slice(0, 80);
-      STATE.questions = qs;
-      STATE.current = 0;
-      STATE.answers = [];
-      STATE.done = false;
-      STATE.chId = null;
-      document.getElementById('nav-row').style.display = 'flex';
-      document.getElementById('result-area').style.display = 'none';
-      goScreen('quiz-screen');
-      renderQuestion();
+      Promise.all(promises).then(function(results) {
+        var allQuestions = [];
+        results.forEach(function(qs) { allQuestions = allQuestions.concat(qs); });
+        shuffleArray(allQuestions);
+        var doneKeys = EXAM_HISTORY[src] || [];
+        var doneSet = {};
+        doneKeys.forEach(function(k){ doneSet[k] = true; });
+        var totalPool = 100;
+        var remaining = doneKeys.length >= totalPool
+          ? [] : allQuestions.filter(function(q){ return !doneSet[q._ch+'_'+q.id]; });
+        if (remaining.length < 80) {
+          EXAM_HISTORY[src] = [];
+          doneSet = {};
+          remaining = allQuestions;
+        }
+        allQuestions = remaining.slice(0, 80);
+        STATE.questions = allQuestions;
+        STATE.current = 0;
+        STATE.answers = [];
+        STATE.done = false;
+        STATE.chId = null;
+        document.getElementById('nav-row').style.display = 'flex';
+        document.getElementById('result-area').style.display = 'none';
+        goScreen('quiz-screen');
+        renderQuestion();
+      });
       return;
     }
     
@@ -393,23 +408,16 @@ function proceedMode() {
         '</div>';
     });
   } else if (src === 'zhian') {
-    // 技術士題庫：只有一章，直接從內嵌數據載入
-    // 先移除舊的解析區塊
-    var oldAnalysis = document.querySelector('.analysis-block');
-    if (oldAnalysis) oldAnalysis.remove();
-    
-    var zhianData = window.ZHIAN_DATA['1'];
-    var qs = zhianData.questions;
-    qs.forEach(function(q) { q._ch = '1'; });
-    STATE.questions = qs;
-    STATE.current = 0;
-    STATE.answers = [];
-    STATE.done = false;
-    document.getElementById('nav-row').style.display = 'flex';
-    document.getElementById('result-area').style.display = 'none';
-    goScreen('quiz-screen');
-    renderQuestion();
-    return;
+    // 技術士題庫：5 章，動態載入章節選擇
+    var keys = Object.keys(window.ZHIAN_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
+    keys.forEach(function(k) {
+      var ch = window.ZHIAN_DATA[k];
+      html += '<div class="chapter-card" onclick="selectChapter(\''+k+'\')">' +
+        '<div class="ch-card-num">第 '+k+' 章</div>' +
+        '<div class="ch-card-title">'+escHtml(ch.chapter)+'</div>' +
+        '<div class="ch-card-q">'+ch.total_questions+' 題</div>'+
+        '</div>';
+    });
   } else {
     // 甲業 20 章
     var data = window.JIA_DATA;
@@ -435,7 +443,7 @@ function proceedMode() {
 function selectChapter(id) {
   STATE.chId = id;
   var src = CURRENT_SOURCE;
-  var chData = src === 'luo' ? CHAPTERS[String(id)] : window.JIA_DATA[String(id)];
+  var chData = src === 'luo' ? CHAPTERS[String(id)] : (src === 'zhian' ? window.ZHIAN_DATA[String(id)] : window.JIA_DATA[String(id)]);
   // 移除舊的解析區塊
   var oldAnalysis = document.querySelector('.analysis-block');
   if (oldAnalysis) oldAnalysis.remove();
@@ -452,6 +460,20 @@ function selectChapter(id) {
     document.getElementById('result-area').style.display = 'none';
     goScreen('quiz-screen');
     renderQuestion();
+  } else if (src === 'zhian') {
+    // 技術士題庫：從外部檔案載入
+    loadChapterQuestions(chData.file).then(function(qs) {
+      if (STATE.mode === 'quiz') { shuffleArray(qs); }
+      qs.forEach(function(q) { q._ch = id; });
+      STATE.questions = qs;
+      STATE.current = 0;
+      STATE.answers = [];
+      STATE.done = false;
+      document.getElementById('nav-row').style.display = 'flex';
+      document.getElementById('result-area').style.display = 'none';
+      goScreen('quiz-screen');
+      renderQuestion();
+    });
   } else {
     // 一般業題庫：從外部檔案載入
     loadChapterQuestions(chData.file).then(function(qs) {
