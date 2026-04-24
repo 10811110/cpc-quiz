@@ -174,7 +174,23 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
           <span id="autoNextDot" style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;transition:.3s;border-radius:50%"></span>
         </label>
       </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid #ecf0f1">
+        <div>
+          <div style="font-weight:600;color:#2c3e50">📊 學習進度</div>
+          <div style="font-size:.85rem;color:#7f8c8d;margin-top:4px">查看各章節完成度與總進度</div>
+        </div>
+        <button onclick="showProgress()" style="padding:8px 16px;background:#3498db;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">查看</button>
+      </div>
       <button onclick="toggleSettings()" style="width:100%;margin-top:16px;padding:12px;background:#e74c3c;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer">關閉</button>
+    </div>
+  </div>
+  
+  <!-- 進度追蹤彈出視窗 -->
+  <div id="progress-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1001;justify-content:center;align-items:center;overflow-y:auto;padding:20px">
+    <div style="background:white;border-radius:16px;padding:24px;max-width:600px;width:100%;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-height:80vh;overflow-y:auto">
+      <h3 style="margin-bottom:16px;font-size:1.2rem;color:#2c3e50">📊 學習進度</h3>
+      <div id="progress-content"></div>
+      <button onclick="closeProgress()" style="width:100%;margin-top:16px;padding:12px;background:#e74c3c;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer">關閉</button>
     </div>
   </div>
 </div>
@@ -184,9 +200,11 @@ var CURRENT_SOURCE = null;
 var EXAM_HISTORY = JSON.parse(localStorage.getItem('examHistory') || '{}');
 var MISTAKE_BOOK = JSON.parse(localStorage.getItem('mistakeBook') || '{}');
 var SETTINGS = JSON.parse(localStorage.getItem('settings') || '{"autoNext":false}');
+var PROGRESS = JSON.parse(localStorage.getItem('progress') || '{}');
 function saveMistakeBook() { localStorage.setItem('mistakeBook', JSON.stringify(MISTAKE_BOOK)); }
 function saveExamHistory() { localStorage.setItem('examHistory', JSON.stringify(EXAM_HISTORY)); }
 function saveSettings() { localStorage.setItem('settings', JSON.stringify(SETTINGS)); }
+function saveProgress() { localStorage.setItem('progress', JSON.stringify(PROGRESS)); }
 var SOURCE_NAMES = {"luo":"一般業題庫 · 725 題","jia":"甲業題庫 · 1011 題","zhian":"技術士題庫 · 100 題 (5 章)"};
 var STATE = {screen:'home',mode:null,chId:null,questions:[],current:0,answers:[],done:false};
   CURRENT_SOURCE = null;
@@ -267,6 +285,146 @@ function toggleSettings() {
 function updateToggleStyle(isOn) {
   document.getElementById('autoNextSwitch').style.background = isOn ? '#27ae60' : '#ccc';
   document.getElementById('autoNextDot').style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+}
+
+// 進度追蹤功能
+function updateProgress(src, chId, totalQuestions, answeredCount) {
+  if (!PROGRESS[src]) PROGRESS[src] = {};
+  if (!PROGRESS[src][chId]) PROGRESS[src][chId] = { answered: 0, total: totalQuestions };
+  PROGRESS[src][chId].answered = Math.max(PROGRESS[src][chId].answered, answeredCount);
+  PROGRESS[src][chId].total = totalQuestions;
+  saveProgress();
+}
+
+function showProgress() {
+  // 關閉設定視窗
+  document.getElementById('settings-modal').style.display = 'none';
+  
+  var html = '';
+  var totalAnswered = 0;
+  var totalQuestions = 0;
+  
+  // 一般業進度
+  if (CHAPTERS) {
+    html += '<div style="margin-bottom:24px">';
+    html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">📘 一般業題庫</h4>';
+    var keys = Object.keys(CHAPTERS).sort(function(a,b){return parseInt(a)-parseInt(b);});
+    keys.forEach(function(k) {
+      var ch = CHAPTERS[k];
+      var prog = PROGRESS['luo'] && PROGRESS['luo'][k] ? PROGRESS['luo'][k] : { answered: 0, total: ch.total_questions };
+      var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
+      totalAnswered += prog.answered;
+      totalQuestions += prog.total;
+      html += '<div style="margin-bottom:12px">';
+      html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
+      html += '<span>'+escHtml(ch.chapter)+'</span>';
+      html += '<span>'+prog.answered+'/'+prog.total+' ('+percent+'%)</span>';
+      html += '</div>';
+      html += '<div style="background:#ecf0f1;border-radius:10px;height:10px;overflow:hidden">';
+      html += '<div style="background:linear-gradient(90deg,#3498db,#2ecc71);width:'+percent+'%;height:100%;transition:width 0.3s"></div>';
+      html += '</div>';
+      html += '</div>';
+    });
+    var overallPercent = totalQuestions > 0 ? Math.round(totalAnswered / totalQuestions * 100) : 0;
+    html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
+    html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
+    html += '<span>總進度</span>';
+    html += '<span>'+totalAnswered+'/'+totalQuestions+' ('+overallPercent+'%)</span>';
+    html += '</div>';
+    html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
+    html += '<div style="background:linear-gradient(90deg,#3498db,#2ecc71);width:'+overallPercent+'%;height:100%;transition:width 0.3s"></div>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+  }
+  
+  // 甲業進度
+  totalAnswered = 0;
+  totalQuestions = 0;
+  html += '<div style="margin-bottom:24px">';
+  html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">📗 甲業題庫</h4>';
+  if (window.JIA_DATA) {
+    var jiaKeys = Object.keys(window.JIA_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
+    jiaKeys.forEach(function(k) {
+      var ch = window.JIA_DATA[k];
+      var prog = PROGRESS['jia'] && PROGRESS['jia'][k] ? PROGRESS['jia'][k] : { answered: 0, total: ch.total_questions || 0 };
+      var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
+      totalAnswered += prog.answered;
+      totalQuestions += prog.total;
+      html += '<div style="margin-bottom:12px">';
+      html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
+      html += '<span>'+escHtml(ch.chapter)+'</span>';
+      html += '<span>'+prog.answered+'/'+prog.total+' ('+percent+'%)</span>';
+      html += '</div>';
+      html += '<div style="background:#ecf0f1;border-radius:10px;height:10px;overflow:hidden">';
+      html += '<div style="background:linear-gradient(90deg,#f39c12,#e74c3c);width:'+percent+'%;height:100%;transition:width 0.3s"></div>';
+      html += '</div>';
+      html += '</div>';
+    });
+  }
+  var overallPercent = totalQuestions > 0 ? Math.round(totalAnswered / totalQuestions * 100) : 0;
+  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
+  html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
+  html += '<span>總進度</span>';
+  html += '<span>'+totalAnswered+'/'+totalQuestions+' ('+overallPercent+'%)</span>';
+  html += '</div>';
+  html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
+  html += '<div style="background:linear-gradient(90deg,#f39c12,#e74c3c);width:'+overallPercent+'%;height:100%;transition:width 0.3s"></div>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+  
+  // 技術士進度
+  totalAnswered = 0;
+  totalQuestions = 0;
+  html += '<div style="margin-bottom:24px">';
+  html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">📙 技術士題庫</h4>';
+  if (window.ZHIAN_DATA) {
+    var zhianKeys = Object.keys(window.ZHIAN_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
+    zhianKeys.forEach(function(k) {
+      var ch = window.ZHIAN_DATA[k];
+      var prog = PROGRESS['zhian'] && PROGRESS['zhian'][k] ? PROGRESS['zhian'][k] : { answered: 0, total: ch.total_questions || 0 };
+      var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
+      totalAnswered += prog.answered;
+      totalQuestions += prog.total;
+      html += '<div style="margin-bottom:12px">';
+      html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
+      html += '<span>'+escHtml(ch.chapter)+'</span>';
+      html += '<span>'+prog.answered+'/'+prog.total+' ('+percent+'%)</span>';
+      html += '</div>';
+      html += '<div style="background:#ecf0f1;border-radius:10px;height:10px;overflow:hidden">';
+      html += '<div style="background:linear-gradient(90deg,#9b59b6,#8e44ad);width:'+percent+'%;height:100%;transition:width 0.3s"></div>';
+      html += '</div>';
+      html += '</div>';
+    });
+  }
+  var overallPercent = totalQuestions > 0 ? Math.round(totalAnswered / totalQuestions * 100) : 0;
+  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
+  html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
+  html += '<span>總進度</span>';
+  html += '<span>'+totalAnswered+'/'+totalQuestions+' ('+overallPercent+'%)</span>';
+  html += '</div>';
+  html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
+  html += '<div style="background:linear-gradient(90deg,#9b59b6,#8e44ad);width:'+overallPercent+'%;height:100%;transition:width 0.3s"></div>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+  
+  document.getElementById('progress-content').innerHTML = html;
+  document.getElementById('progress-modal').style.display = 'flex';
+}
+
+function closeProgress() {
+  document.getElementById('progress-modal').style.display = 'none';
+}
+
+function resetProgress() {
+  if (confirm('確定要重置所有學習進度嗎？此操作無法復原！')) {
+    PROGRESS = {};
+    saveProgress();
+    alert('進度已重置！');
+    closeProgress();
+  }
 }
 
 function toggleAutoNext() {
@@ -738,6 +896,13 @@ function showResult() {
         proceedMode();
       };
     }
+  }
+  
+  // 更新進度追蹤
+  var src = CURRENT_SOURCE;
+  var chId = STATE.chId;
+  if (src && chId) {
+    updateProgress(src, chId, STATE.questions.length, STATE.answers.filter(function(a){return a!==undefined;}).length);
   }
   // For non-exam modes: override retake to re-run same chapter
   var normRetake = document.querySelector('#result-area .secondary');
