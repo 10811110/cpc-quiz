@@ -234,7 +234,14 @@ var PROGRESS = JSON.parse(localStorage.getItem('progress') || '{}');
 function saveMistakeBook() { localStorage.setItem('mistakeBook', JSON.stringify(MISTAKE_BOOK)); }
 function saveExamHistory() { localStorage.setItem('examHistory', JSON.stringify(EXAM_HISTORY)); }
 function saveSettings() { localStorage.setItem('settings', JSON.stringify(SETTINGS)); }
-function saveProgress() { localStorage.setItem('progress', JSON.stringify(PROGRESS)); }
+function saveProgress() {
+  localStorage.setItem('progress', JSON.stringify(PROGRESS));
+  // 記錄修改時間，用於多裝置同步比對
+  var now = new Date();
+  var timeStr = now.toLocaleString('zh-TW');
+  localStorage.setItem('progressModified', timeStr);
+  console.log('💾 進度已保存 (' + timeStr + ')');
+}
 var SOURCE_NAMES = {"luo":"一般業題庫 · 725 題","jia":"甲業題庫 · 1011 題","zhian":"技術士題庫 · 100 題 (5 章)"};
 var STATE = {screen:'home',mode:null,chId:null,questions:[],current:0,answers:[],done:false};
   CURRENT_SOURCE = null;
@@ -1079,6 +1086,10 @@ function executeBackup(isAutoBackup) {
   var statusEl = document.getElementById('google-status');
   if (statusEl) statusEl.textContent = '⏳ 備份中...';
   
+  // 獲取本地進度最後修改時間
+  var localModified = localStorage.getItem('progressModified') || localStorage.getItem('lastBackup');
+  var localModifiedTime = localModified ? new Date(localModified) : new Date(0);
+  
   // 尋找或建立備份資料夾
   fetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent("mimeType='application/vnd.google-apps.folder' and name='" + DRIVE_FOLDER_NAME + "' and trashed=false") + '&spaces=drive', {
     headers: { 'Authorization': 'Bearer ' + googleToken }
@@ -1117,39 +1128,45 @@ function executeBackup(isAutoBackup) {
   })
   .then(function(params) {
     if (params.existingFile) {
-      // 更新現有檔案
-      return fetch('https://www.googleapis.com/upload/drive/v3/files/' + params.existingFile.id + '?uploadType=multipart', {
-        method: 'PATCH',
-        headers: { 'Authorization': 'Bearer ' + googleToken },
-        body: createMultipartBody(PROGRESS, BACKUP_FILENAME)
+      // 比較時間戳
+      var cloudModifiedTime = new Date(params.existingFile.modifiedTime);
+      
+      console.log('🕐 時間戳比較:', {
+        '本地': localModifiedTime.toLocaleString(),
+        '雲端': cloudModifiedTime.toLocaleString(),
+        '雲端較新': cloudModifiedTime > localModifiedTime
       });
-    } else {
-      // 建立新檔案
-      return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + googleToken },
-        body: createMultipartBody(PROGRESS, BACKUP_FILENAME, params.folderId)
-      });
-    }
-  })
-  .then(function(response) {
-    if (response.ok) {
-      var now = new Date();
-      var timeStr = now.toLocaleString('zh-TW');
-      if (statusEl) statusEl.textContent = '✅ 最後備份：' + timeStr;
-      localStorage.setItem('lastBackup', timeStr);
-      if (!isAutoBackup) {
-        alert('備份成功！\n檔案已儲存至 Google Drive / ' + DRIVE_FOLDER_NAME + '/' + BACKUP_FILENAME);
+      
+      // 如果雲端版本較新，提示用戶
+      if (cloudModifiedTime > localModifiedTime) {
+        var cloudTimeStr = cloudModifiedTime.toLocaleString('zh-TW');
+        var localTimeStr = localModifiedTime.toLocaleString('zh-TW');
+        
+        var msg = '⚠️ 偵測到雲端備份較新！\n\n' +
+                  '📁 雲端版本：' + cloudTimeStr + '\n' +
+                  '💾 本地版本：' + localTimeStr + '\n\n' +
+                  '選擇「確定」繼續備份（用本地進度覆蓋雲端）\n' +
+                  '選擇「取消」下載雲端版本（用雲端進度覆蓋本地）';
+        
+        if (confirm(msg)) {
+          // 用戶選擇繼續備份
+          console.log('📤 用戶選擇：繼續備份（覆蓋雲端）');
+          return uploadBackup(params.folderId, params.existingFile.id, isAutoBackup, statusEl);
+        } else {
+          // 用戶選擇下載雲端版本
+          console.log('📥 用戶選擇：下載雲端版本');
+          downloadBackup(params.existingFile.id, statusEl);
+          return Promise.resolve();
+        }
       } else {
-        console.log('✅ 自動備份成功 (' + timeStr + ')');
+        // 本地版本較新或相同，直接備份
+        console.log('✅ 本地版本較新，繼續備份');
+        return uploadBackup(params.folderId, params.existingFile.id, isAutoBackup, statusEl);
       }
     } else {
-      return response.json().then(function(errData) {
-        var errMsg = errData.error ? errData.error.message : '備份失敗';
-        throw new Error(errMsg);
-      }).catch(function() {
-        throw new Error('備份失敗 (HTTP ' + response.status + ')');
-      });
+      // 沒有現有檔案，直接建立
+      console.log('📝 建立新的備份檔案');
+      return uploadBackup(params.folderId, null, isAutoBackup, statusEl);
     }
   })
   .catch(function(err) {
@@ -1166,6 +1183,70 @@ function executeBackup(isAutoBackup) {
     if (!isAutoBackup) {
       alert('備份失敗：' + userMsg);
     }
+  });
+}
+
+// 上傳備份到 Google Drive
+function uploadBackup(folderId, fileId, isAutoBackup, statusEl) {
+  var url = fileId 
+    ? 'https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=multipart'
+    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+  
+  var method = fileId ? 'PATCH' : 'POST';
+  
+  return fetch(url, {
+    method: method,
+    headers: { 'Authorization': 'Bearer ' + googleToken },
+    body: createMultipartBody(PROGRESS, BACKUP_FILENAME, fileId ? null : folderId)
+  })
+  .then(function(response) {
+    if (response.ok) {
+      var now = new Date();
+      var timeStr = now.toLocaleString('zh-TW');
+      if (statusEl) statusEl.textContent = '✅ 最後備份：' + timeStr;
+      localStorage.setItem('lastBackup', timeStr);
+      localStorage.setItem('progressModified', timeStr);
+      if (!isAutoBackup) {
+        alert('備份成功！\n檔案已儲存至 Google Drive / ' + DRIVE_FOLDER_NAME + '/' + BACKUP_FILENAME);
+      } else {
+        console.log('✅ 自動備份成功 (' + timeStr + ')');
+      }
+    } else {
+      return response.json().then(function(errData) {
+        var errMsg = errData.error ? errData.error.message : '備份失敗';
+        throw new Error(errMsg);
+      }).catch(function() {
+        throw new Error('備份失敗 (HTTP ' + response.status + ')');
+      });
+    }
+  });
+}
+
+// 從 Google Drive 下載備份
+function downloadBackup(fileId, statusEl) {
+  return fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', {
+    headers: { 'Authorization': 'Bearer ' + googleToken }
+  })
+  .then(function(r) {
+    if (!r.ok) {
+      throw new Error('下載失敗 (HTTP ' + r.status + ')');
+    }
+    return r.json();
+  })
+  .then(function(data) {
+    PROGRESS = data;
+    saveProgress();
+    var now = new Date();
+    var timeStr = now.toLocaleString('zh-TW');
+    if (statusEl) statusEl.textContent = '✅ 最後恢復：' + timeStr;
+    localStorage.setItem('progressModified', timeStr);
+    alert('✅ 已從雲端還原進度！\n時間：' + timeStr);
+    showProgress();
+  })
+  .catch(function(err) {
+    console.error('下載失敗:', err);
+    if (statusEl) statusEl.textContent = '❌ 下載失敗';
+    alert('下載失敗：' + err.message);
   });
 }
 
@@ -1196,14 +1277,10 @@ function restoreFromDrive() {
     return;
   }
   
-  if (!confirm('從 Google Drive 恢復進度將覆蓋現有進度，確定要繼續嗎？')) {
-    return;
-  }
-  
+  // 尋找備份資料夾和檔案
   var statusEl = document.getElementById('google-status');
   if (statusEl) statusEl.textContent = '⏳ 恢復中...';
   
-  // 尋找備份資料夾
   fetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent("mimeType='application/vnd.google-apps.folder' and name='" + DRIVE_FOLDER_NAME + "' and trashed=false") + '&spaces=drive', {
     headers: { 'Authorization': 'Bearer ' + googleToken }
   })
@@ -1223,29 +1300,27 @@ function restoreFromDrive() {
       if (!res.files || res.files.length === 0) {
         throw new Error('找不到備份檔案');
       }
-      return res.files[0].id;
+      return res.files[0];
     });
   })
-  .then(function(fileId) {
-    // 下載檔案內容
-    return fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', {
-      headers: { 'Authorization': 'Bearer ' + googleToken }
-    })
-    .then(function(r) {
-      if (!r.ok) {
-        throw new Error('下載失敗 (HTTP ' + r.status + ')');
-      }
-      return r.json();
-    });
-  })
-  .then(function(data) {
-    PROGRESS = data;
-    saveProgress();
-    var now = new Date();
-    var timeStr = now.toLocaleString('zh-TW');
-    if (statusEl) statusEl.textContent = '✅ 最後恢復：' + timeStr;
-    alert('進度恢復成功！');
-    showProgress();
+  .then(function(file) {
+    // 顯示檔案資訊讓用戶確認
+    var cloudModifiedTime = new Date(file.modifiedTime);
+    var cloudTimeStr = cloudModifiedTime.toLocaleString('zh-TW');
+    
+    var msg = '📥 從 Google Drive 還原進度\n\n' +
+              '📁 檔案：' + file.name + '\n' +
+              '🕐 雲端版本：' + cloudTimeStr + '\n\n' +
+              '注意：這將覆蓋本地的所有進度！\n\n' +
+              '確定要繼續嗎？';
+    
+    if (confirm(msg)) {
+      // 下載並還原
+      return downloadBackup(file.id, statusEl);
+    } else {
+      if (statusEl) statusEl.textContent = '⏸️ 已取消還原';
+      return Promise.resolve();
+    }
   })
   .catch(function(err) {
     console.error('恢復失敗:', err);
