@@ -937,7 +937,7 @@ async function signInWithGoogle() {
 }
 
 function fetchUserInfo(accessToken) {
-  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+  return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   })
   .then(function(r) { 
@@ -963,14 +963,14 @@ function fetchUserInfo(accessToken) {
     localStorage.setItem('googleToken', accessToken);
     localStorage.setItem('googleTokenExpiry', googleTokenExpiry);
     
-    alert('Google 帳號綁定成功！\n' + userInfo.email);
+    console.log('✅ 用戶資訊:', googleUser);
     updateGoogleUI();
-    // 首次登入自動備份
-    backupToDrive();
+    
+    return googleUser; // 返回用戶資訊給 Promise 鏈
   })
   .catch(function(err) {
     console.error('取得使用者資訊失敗:', err);
-    alert('登入失敗：' + err.message);
+    throw err; // 重新拋出錯誤讓上層處理
   });
 }
 
