@@ -279,9 +279,28 @@ function loadChapterQuestions(filename) {
 }
 
 function init() {
-  // 載入章節索引
-  loadChaptersData().then(function(data) {
-    CHAPTERS = data;
+  var d = document.getElementById('quizData');
+  var d2 = document.getElementById('quizData2');
+  if (!d && !d2) {
+    document.getElementById('home').innerHTML='<p style="text-align:center;padding:40px;color:red">載入失敗：找不到題目數據</p>';
+    return;
+  }
+  try {
+    // 初始化題庫物件
+    CHAPTERS = {};
+    // 一般業題庫（如果有）
+    if (d && d.textContent.trim()) {
+      CHAPTERS = JSON.parse(d.textContent);
+    }
+    // 甲業題庫（如果有）
+    if (d2 && d2.textContent.trim()) {
+      var jiaYeData = JSON.parse(d2.textContent);
+      // 合併題庫
+      for (var key in jiaYeData) {
+        CHAPTERS[key] = jiaYeData[key];
+      }
+    }
+    
     // 載入主題設定
     var isDark = localStorage.getItem('theme') === 'dark';
     if (isDark) {
@@ -289,9 +308,9 @@ function init() {
     }
     updateMistakeCount();
     renderHome();
-  }).catch(function(e) {
+  } catch(e) {
     document.getElementById('home').innerHTML='<p style="text-align:center;padding:40px;color:red">錯誤：'+e.message+'</p>';
-  });
+  }
 }
 
 function toggleTheme() {
@@ -2021,13 +2040,14 @@ function selectOptionWithKeyboard(opt) {
   
   // 模擬按鈕點擊
   var buttons = document.querySelectorAll('.option-btn');
-  buttons.forEach(function(btn) {
+  for (var i = 0; i < buttons.length; i++) {
+    var btn = buttons[i];
     var btnText = btn.textContent.trim();
     if (btnText.indexOf(opt + '.') === 0) {
       btn.click();
       break;
     }
-  });
+  }
 }
 
 if (document.readyState === 'loading') {
