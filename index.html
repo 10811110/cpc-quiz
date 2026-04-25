@@ -136,6 +136,9 @@ body{font-family:"PingFang HK","Microsoft JhengHei",sans-serif;background:#f0f2f
   </div>
   <div id="quiz-screen" class="screen">
     <button class="home-btn" onclick="goHome()">🏠 回首頁</button>
+    <div style="text-align:right;margin-bottom:8px;font-size:.8rem;color:#7f8c8d">
+      ⌨️ 鍵盤：1-4 選答案 · Enter 下一題 · ←→ 切換題目
+    </div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     <div class="question-counter" id="question-counter"></div>
     <div class="quiz-card">
@@ -1948,6 +1951,83 @@ function startMistakePractice(src) {
   document.getElementById('result-area').style.display = 'none';
   goScreen('quiz-screen');
   renderQuestion();
+}
+
+// 鍵盤快捷鍵功能
+var KEYBOARD_SHORTCUTS_ENABLED = true;
+
+document.addEventListener('keydown', function(e) {
+  // 如果是在輸入框中，不啟用快捷鍵
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    return;
+  }
+  
+  // 檢查是否在答題畫面
+  var isQuizScreen = document.getElementById('quiz-screen').classList.contains('active');
+  if (!isQuizScreen || !KEYBOARD_SHORTCUTS_ENABLED) {
+    return;
+  }
+  
+  // 數字鍵 1-4 或字母鍵 A-D 選擇答案
+  if (e.key >= '1' && e.key <= '4') {
+    var optionIndex = parseInt(e.key) - 1;
+    var options = ['A', 'B', 'C', 'D'];
+    selectOptionWithKeyboard(options[optionIndex]);
+  } else if (e.key.toLowerCase() >= 'a' && e.key.toLowerCase() <= 'd') {
+    selectOptionWithKeyboard(e.key.toUpperCase());
+  }
+  
+  // Enter 鍵：下一題 或 查看結果
+  if (e.key === 'Enter') {
+    var answered = STATE.answers[STATE.current];
+    if (answered !== undefined) {
+      // 已答題，進入下一題
+      if (STATE.current < STATE.questions.length - 1) {
+        nextQ();
+      } else {
+        showResult();
+      }
+    }
+  }
+  
+  // 方向鍵：切換題目
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    if (STATE.current < STATE.questions.length - 1) {
+      nextQ();
+    }
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    if (STATE.current > 0) {
+      prevQ();
+    }
+  }
+  
+  // Space 鍵：顯示/隱藏解析（練習模式）
+  if (e.key === ' ' && STATE.mode === 'practice') {
+    e.preventDefault(); // 防止頁面滾動
+    // 如果已經答題，顯示解析（已自動顯示）
+  }
+});
+
+// 用鍵盤選擇答案
+function selectOptionWithKeyboard(opt) {
+  var q = STATE.questions[STATE.current];
+  if (!q) return;
+  
+  // 如果已經答題（練習模式），不重複選擇
+  if (STATE.answers[STATE.current] !== undefined && STATE.mode === 'practice') {
+    return;
+  }
+  
+  // 模擬按鈕點擊
+  var buttons = document.querySelectorAll('.option-btn');
+  buttons.forEach(function(btn) {
+    var btnText = btn.textContent.trim();
+    if (btnText.indexOf(opt + '.') === 0) {
+      btn.click();
+      break;
+    }
+  });
 }
 
 if (document.readyState === 'loading') {
