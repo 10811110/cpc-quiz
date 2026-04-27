@@ -1588,6 +1588,16 @@ function proceedMode() {
         '<div class="ch-card-q">'+ch.total_questions+' 題</div>'+
         '</div>';
     });
+  } else if (src === 'organic') {
+    // 有機溶劑題庫：7 章
+    var keys = Object.keys(window.ORGANIC_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
+    keys.forEach(function(k) {
+      var ch = window.ORGANIC_DATA[k];
+      html += '<div class="chapter-card" onclick="selectChapter(\''+k+'\')">' +
+        '<div class="ch-card-num">'+escHtml(ch.chapter)+'</div>' +
+        '<div class="ch-card-title">'+ch.total_questions+' 題</div>' +
+        '</div>';
+    });
   } else {
     // 甲業 20 章
     var data = window.JIA_DATA;
@@ -1618,7 +1628,10 @@ function proceedMode() {
 function selectChapter(id) {
   STATE.chId = id;
   var src = CURRENT_SOURCE;
-  var chData = src === 'luo' ? CHAPTERS[String(id)] : (src === 'zhian' ? window.ZHIAN_DATA[String(id)] : window.JIA_DATA[String(id)]);
+  var chData = src === 'luo' ? CHAPTERS[String(id)] : 
+               (src === 'zhian' ? window.ZHIAN_DATA[String(id)] : 
+               (src === 'organic' ? window.ORGANIC_DATA[String(id)] : 
+               window.JIA_DATA[String(id)]));
   // 移除舊的解析區塊
   var oldAnalysis = document.querySelector('.analysis-block');
   if (oldAnalysis) oldAnalysis.remove();
@@ -1626,6 +1639,18 @@ function selectChapter(id) {
   if (src === 'jia' && window.JIA_DATA[String(id)] && window.JIA_DATA[String(id)].questions) {
     // 甲業題庫：題目已內嵌，直接使用
     var qs = window.JIA_DATA[String(id)].questions;
+    if (STATE.mode === 'quiz') { shuffleArray(qs); }
+    STATE.questions = qs;
+    STATE.current = 0;
+    STATE.answers = [];
+    STATE.done = false;
+    document.getElementById('nav-row').style.display = 'flex';
+    document.getElementById('result-area').style.display = 'none';
+    goScreen('quiz-screen');
+    renderQuestion();
+  } else if (src === 'organic' && window.ORGANIC_DATA[String(id)] && window.ORGANIC_DATA[String(id)].questions) {
+    // 有機溶劑題庫：題目已內嵌，直接使用
+    var qs = window.ORGANIC_DATA[String(id)].questions;
     if (STATE.mode === 'quiz') { shuffleArray(qs); }
     STATE.questions = qs;
     STATE.current = 0;
