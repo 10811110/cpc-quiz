@@ -1,1 +1,9 @@
 node_modules
+*.log
+*.db
+*.py
+*.mjs
+*.md
+!題庫對話快速重啟指南.md
+甲業*.json
+deploy_temp/
