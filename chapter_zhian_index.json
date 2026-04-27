@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "chapter": "第 1 章 勞動基準法相關規定",
+    "total_questions": 20,
+    "file": "chapter_zhian_1.json"
+  },
+  {
+    "id": 2,
+    "chapter": "第 2 章 職業安全衛生法相關規定",
+    "total_questions": 20,
+    "file": "chapter_zhian_2.json"
+  },
+  {
+    "id": 3,
+    "chapter": "第 3 章 勞動檢查法相關規定",
+    "total_questions": 20,
+    "file": "chapter_zhian_3.json"
+  },
+  {
+    "id": 4,
+    "chapter": "第 4 章 職業安全衛生管理",
+    "total_questions": 20,
+    "file": "chapter_zhian_4.json"
+  },
+  {
+    "id": 5,
+    "chapter": "第 5 章 職業災害預防與補償",
+    "total_questions": 20,
+    "file": "chapter_zhian_5.json"
+  }
+]

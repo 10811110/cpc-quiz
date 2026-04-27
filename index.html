@@ -279,12 +279,15 @@ function selectSource(src) {
     CHAPTERS = window.JIA_DATA;
     goScreen('mode-select');
   } else if (src === 'zhian') {
-    // 技術士題庫：動態載入 chapters.json
-    fetch('chapter_zhian.json')
+    // 技術士題庫：動態載入章節索引
+    fetch('chapter_zhian_index.json')
       .then(r => r.json())
       .then(function(data) {
-        window.ZHIAN_DATA = data;
-        CHAPTERS = data;
+        // 轉換為物件格式 {"1": {...}, "2": {...}}
+        var obj = {};
+        data.forEach(function(ch) { obj[String(ch.id)] = ch; });
+        window.ZHIAN_DATA = obj;
+        CHAPTERS = obj;
         goScreen('mode-select');
       })
       .catch(function(err) {
