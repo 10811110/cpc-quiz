@@ -470,42 +470,41 @@ function showProgress() {
   updateGoogleUI();
   
   var html = '';
-  var totalAnswered = 0;
-  var totalQuestions = 0;
   
-  // 一般業進度
-  if (CHAPTERS) {
-    html += '<div style="margin-bottom:24px">';
-    html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">📘 一般業題庫</h4>';
-    var keys = Object.keys(CHAPTERS).sort(function(a,b){return parseInt(a)-parseInt(b);});
-    keys.forEach(function(k) {
-      var ch = CHAPTERS[k];
-      var prog = PROGRESS['luo'] && PROGRESS['luo'][k] ? PROGRESS['luo'][k] : { answered: 0, total: ch.total_questions };
-      var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
-      totalAnswered += prog.answered;
-      totalQuestions += prog.total;
-      html += '<div style="margin-bottom:12px">';
-      html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
-      html += '<span>'+escHtml(ch.chapter)+'</span>';
-      html += '<span>'+prog.answered+'/'+prog.total+' ('+percent+'%)</span>';
-      html += '</div>';
-      html += '<div style="background:#ecf0f1;border-radius:10px;height:10px;overflow:hidden">';
-      html += '<div style="background:linear-gradient(90deg,#3498db,#2ecc71);width:'+percent+'%;height:100%;transition:width 0.3s"></div>';
-      html += '</div>';
-      html += '</div>';
-    });
-    var overallPercent = totalQuestions > 0 ? Math.round(totalAnswered / totalQuestions * 100) : 0;
-    html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
-    html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
-    html += '<span>總進度</span>';
-    html += '<span>'+totalAnswered+'/'+totalQuestions+' ('+overallPercent+'%)</span>';
+  // 一般業進度 - 從 chapters.json 直接讀取 17 章
+  html += '<div style="margin-bottom:24px">';
+  html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">📘 一般業題庫</h4>';
+  var luoTotalAnswered = 0;
+  var luoTotalQuestions = 0;
+  // 使用 chapters.json 中的數據（確保只有 17 章）
+  var luoKeys = Object.keys(CHAPTERS).filter(function(k) { return parseInt(k) >= 1 && parseInt(k) <= 17; }).sort(function(a,b){return parseInt(a)-parseInt(b);});
+  luoKeys.forEach(function(k) {
+    var ch = CHAPTERS[k];
+    var prog = PROGRESS['luo'] && PROGRESS['luo'][k] ? PROGRESS['luo'][k] : { answered: 0, total: ch.total_questions };
+    var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
+    luoTotalAnswered += prog.answered;
+    luoTotalQuestions += prog.total;
+    html += '<div style="margin-bottom:12px">';
+    html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
+    html += '<span>'+escHtml(ch.chapter)+'</span>';
+    html += '<span>'+prog.answered+'/'+prog.total+' ('+percent+'%)</span>';
     html += '</div>';
-    html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
-    html += '<div style="background:linear-gradient(90deg,#3498db,#2ecc71);width:'+overallPercent+'%;height:100%;transition:width 0.3s"></div>';
+    html += '<div style="background:#ecf0f1;border-radius:10px;height:10px;overflow:hidden">';
+    html += '<div style="background:linear-gradient(90deg,#3498db,#2ecc71);width:'+percent+'%;height:100%;transition:width 0.3s"></div>';
     html += '</div>';
     html += '</div>';
-    html += '</div>';
-  }
+  });
+  var luoOverallPercent = luoTotalQuestions > 0 ? Math.round(luoTotalAnswered / luoTotalQuestions * 100) : 0;
+  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
+  html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
+  html += '<span>總進度</span>';
+  html += '<span>'+luoTotalAnswered+'/'+luoTotalQuestions+' ('+luoOverallPercent+'%)</span>';
+  html += '</div>';
+  html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
+  html += '<div style="background:linear-gradient(90deg,#3498db,#2ecc71);width:'+luoOverallPercent+'%;height:100%;transition:width 0.3s"></div>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
   
   // 甲業進度
   totalAnswered = 0;
