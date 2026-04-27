@@ -263,13 +263,15 @@ function selectSource(src) {
   if (src === 'luo') {
     // 一般業：使用外部 chapters.json
     loadChaptersData().then(function(data) {
+      window.LUO_DATA = data;
       CHAPTERS = data;
       goScreen('mode-select');
     });
     return;
   } else if (src === 'jia') {
     var d2 = document.getElementById('quizData2');
-    CHAPTERS = JSON.parse(d2.textContent);
+    window.JIA_DATA = JSON.parse(d2.textContent);
+    CHAPTERS = window.JIA_DATA;
     goScreen('mode-select');
   } else {
     goScreen('mode-select');
@@ -302,18 +304,24 @@ function init() {
   try {
     // 初始化題庫物件
     CHAPTERS = {};
-    // 一般業題庫（如果有）
-    if (d && d.textContent.trim()) {
-      CHAPTERS = JSON.parse(d.textContent);
-    }
+    window.LUO_DATA = null;  // 保存一般業數據（用於學習進度顯示）
+    window.JIA_DATA = null;  // 保存甲業數據
+    window.ZHIAN_DATA = null;  // 保存技術士數據
     // 甲業題庫（如果有）
     if (d2 && d2.textContent.trim()) {
-      var jiaYeData = JSON.parse(d2.textContent);
-      // 合併題庫
-      for (var key in jiaYeData) {
-        CHAPTERS[key] = jiaYeData[key];
-      }
+      window.JIA_DATA = JSON.parse(d2.textContent);
+      CHAPTERS = window.JIA_DATA;  // 預設顯示甲業
     }
+    // 一般業題庫：載入外部 chapters.json
+    loadChaptersData().then(function(data) {
+      window.LUO_DATA = data;
+      // 預設使用一般業數據
+      if (!CURRENT_SOURCE) {
+        CHAPTERS = data;
+      }
+    }).catch(function(err) {
+      console.error('Failed to load chapters.json:', err);
+    });
     
     // 載入主題設定
     var isDark = localStorage.getItem('theme') === 'dark';
@@ -474,12 +482,12 @@ function showProgress() {
   var totalQuestions = 0;
   
   // 一般業進度
-  if (CHAPTERS) {
+  if (window.LUO_DATA) {
     html += '<div style="margin-bottom:24px">';
     html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">📘 一般業題庫</h4>';
-    var keys = Object.keys(CHAPTERS).sort(function(a,b){return parseInt(a)-parseInt(b);});
+    var keys = Object.keys(window.LUO_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
     keys.forEach(function(k) {
-      var ch = CHAPTERS[k];
+      var ch = window.LUO_DATA[k];
       var prog = PROGRESS['luo'] && PROGRESS['luo'][k] ? PROGRESS['luo'][k] : { answered: 0, total: ch.total_questions };
       var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
       totalAnswered += prog.answered;
