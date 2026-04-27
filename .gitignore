@@ -7,3 +7,10 @@ node_modules
 !題庫對話快速重啟指南.md
 甲業*.json
 deploy_temp/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
