@@ -1457,23 +1457,25 @@ function selectMode(mode) {
     window.JIA_DATA = JSON.parse(d2.textContent); // 使用獨立變數儲存甲業數據
     proceedMode();
   } else if (CURRENT_SOURCE === 'zhian') {
-    // 技術士題庫：動態載入 chapters.json
-    fetch('chapters.json')
-      .then(r => r.json())
-      .then(chapters => {
-        var zhianChapters = chapters.filter(c => c.file.startsWith('chapter_zhian_'));
-        var data = {};
-        zhianChapters.forEach(c => {
-          data[c.id] = { id: c.id, chapter: c.chapter, total_questions: c.total_questions, file: c.file, note: c.note };
+    // 技術士題庫：使用已載入的 window.ZHIAN_DATA
+    if (window.ZHIAN_DATA && Object.keys(window.ZHIAN_DATA).length > 0) {
+      proceedMode();
+    } else {
+      // 如果還沒載入，從索引檔案載入
+      fetch('chapter_zhian_index.json')
+        .then(r => r.json())
+        .then(data => {
+          var obj = {};
+          data.forEach(function(ch) { obj[String(ch.id)] = ch; });
+          window.ZHIAN_DATA = obj;
+          proceedMode();
+        })
+        .catch(err => {
+          console.error('Failed to load zhian chapters:', err);
+          alert('載入技術士題庫失敗，請刷新頁面重試');
         });
-        window.ZHIAN_DATA = data;
-        proceedMode();
-      })
-      .catch(err => {
-        console.error('Failed to load zhian chapters:', err);
-        alert('載入技術士題庫失敗，請刷新頁面重試');
-      });
-    return;
+      return;
+    }
   } else {
     proceedMode();
   }
