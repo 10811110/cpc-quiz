@@ -278,6 +278,20 @@ function selectSource(src) {
     window.JIA_DATA = JSON.parse(d2.textContent);
     CHAPTERS = window.JIA_DATA;
     goScreen('mode-select');
+  } else if (src === 'zhian') {
+    // 技術士題庫：動態載入 chapters.json
+    fetch('chapter_zhian.json')
+      .then(r => r.json())
+      .then(function(data) {
+        window.ZHIAN_DATA = data;
+        CHAPTERS = data;
+        goScreen('mode-select');
+      })
+      .catch(function(err) {
+        console.error('載入技術士題庫失敗:', err);
+        alert('載入技術士題庫失敗，請刷新頁面重試');
+      });
+    return;
   } else if (src === 'organic') {
     // 有機溶劑題庫：使用內嵌數據
     var d3 = document.getElementById('quizData3');
