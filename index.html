@@ -512,15 +512,21 @@ function showProgress() {
   
   // 一般業進度
   if (window.LUO_DATA) {
+    var luoTotalAnswered = 0;
+    var luoTotalQuestions = 0;
     html += '<div style="margin-bottom:24px">';
-    html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">📘 一般業題庫</h4>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    html += '<h4 style="margin:0;color:#2c3e50">📘 一般業題庫</h4>';
+    html += '<button id="luo-toggle-btn" onclick="toggleProgressSection(\'luo\')" style="padding:6px 12px;background:#3498db;color:white;border:none;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer">展開</button>';
+    html += '</div>';
+    html += '<div id="luo-details" style="display:none">';
     var keys = Object.keys(window.LUO_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
     keys.forEach(function(k) {
       var ch = window.LUO_DATA[k];
       var prog = PROGRESS['luo'] && PROGRESS['luo'][k] ? PROGRESS['luo'][k] : { answered: 0, total: ch.total_questions };
       var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
-      totalAnswered += prog.answered;
-      totalQuestions += prog.total;
+      luoTotalAnswered += prog.answered;
+      luoTotalQuestions += prog.total;
       html += '<div style="margin-bottom:12px">';
       html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
       html += '<span>'+escHtml(ch.chapter)+'</span>';
@@ -531,32 +537,37 @@ function showProgress() {
       html += '</div>';
       html += '</div>';
     });
-    var overallPercent = totalQuestions > 0 ? Math.round(totalAnswered / totalQuestions * 100) : 0;
-    html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
+    html += '</div>';
+    var luoOverallPercent = luoTotalQuestions > 0 ? Math.round(luoTotalAnswered / luoTotalQuestions * 100) : 0;
+    html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:12px">';
     html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
-    html += '<span>總進度</span>';
-    html += '<span>'+totalAnswered+'/'+totalQuestions+' ('+overallPercent+'%)</span>';
+    html += '<span>📘 總進度</span>';
+    html += '<span>'+luoTotalAnswered+'/'+luoTotalQuestions+' ('+luoOverallPercent+'%)</span>';
     html += '</div>';
     html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
-    html += '<div style="background:linear-gradient(90deg,#3498db,#2ecc71);width:'+overallPercent+'%;height:100%;transition:width 0.3s"></div>';
+    html += '<div style="background:linear-gradient(90deg,#3498db,#2ecc71);width:'+luoOverallPercent+'%;height:100%;transition:width 0.3s"></div>';
     html += '</div>';
     html += '</div>';
     html += '</div>';
   }
   
   // 甲業進度
-  totalAnswered = 0;
-  totalQuestions = 0;
+  var jiaTotalAnswered = 0;
+  var jiaTotalQuestions = 0;
   html += '<div style="margin-bottom:24px">';
-  html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">📗 甲業題庫</h4>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  html += '<h4 style="margin:0;color:#2c3e50">📗 甲業題庫</h4>';
+  html += '<button id="jia-toggle-btn" onclick="toggleProgressSection(\'jia\')" style="padding:6px 12px;background:#f39c12;color:white;border:none;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer">展開</button>';
+  html += '</div>';
+  html += '<div id="jia-details" style="display:none">';
   if (window.JIA_DATA) {
     var jiaKeys = Object.keys(window.JIA_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
     jiaKeys.forEach(function(k) {
       var ch = window.JIA_DATA[k];
       var prog = PROGRESS['jia'] && PROGRESS['jia'][k] ? PROGRESS['jia'][k] : { answered: 0, total: ch.total_questions || 0 };
       var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
-      totalAnswered += prog.answered;
-      totalQuestions += prog.total;
+      jiaTotalAnswered += prog.answered;
+      jiaTotalQuestions += prog.total;
       html += '<div style="margin-bottom:12px">';
       html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
       html += '<span>'+escHtml(ch.chapter)+'</span>';
@@ -568,31 +579,36 @@ function showProgress() {
       html += '</div>';
     });
   }
-  var overallPercent = totalQuestions > 0 ? Math.round(totalAnswered / totalQuestions * 100) : 0;
-  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
+  html += '</div>';
+  var jiaOverallPercent = jiaTotalQuestions > 0 ? Math.round(jiaTotalAnswered / jiaTotalQuestions * 100) : 0;
+  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:12px">';
   html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
-  html += '<span>總進度</span>';
-  html += '<span>'+totalAnswered+'/'+totalQuestions+' ('+overallPercent+'%)</span>';
+  html += '<span>📗 總進度</span>';
+  html += '<span>'+jiaTotalAnswered+'/'+jiaTotalQuestions+' ('+jiaOverallPercent+'%)</span>';
   html += '</div>';
   html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
-  html += '<div style="background:linear-gradient(90deg,#f39c12,#e74c3c);width:'+overallPercent+'%;height:100%;transition:width 0.3s"></div>';
+  html += '<div style="background:linear-gradient(90deg,#f39c12,#e74c3c);width:'+jiaOverallPercent+'%;height:100%;transition:width 0.3s"></div>';
   html += '</div>';
   html += '</div>';
   html += '</div>';
   
   // 技術士進度
-  totalAnswered = 0;
-  totalQuestions = 0;
+  var zhianTotalAnswered = 0;
+  var zhianTotalQuestions = 0;
   html += '<div style="margin-bottom:24px">';
-  html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">📙 技術士題庫</h4>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  html += '<h4 style="margin:0;color:#2c3e50">📙 技術士題庫</h4>';
+  html += '<button id="zhian-toggle-btn" onclick="toggleProgressSection(\'zhian\')" style="padding:6px 12px;background:#9b59b6;color:white;border:none;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer">展開</button>';
+  html += '</div>';
+  html += '<div id="zhian-details" style="display:none">';
   if (window.ZHIAN_DATA) {
     var zhianKeys = Object.keys(window.ZHIAN_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
     zhianKeys.forEach(function(k) {
       var ch = window.ZHIAN_DATA[k];
       var prog = PROGRESS['zhian'] && PROGRESS['zhian'][k] ? PROGRESS['zhian'][k] : { answered: 0, total: ch.total_questions || 0 };
       var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
-      totalAnswered += prog.answered;
-      totalQuestions += prog.total;
+      zhianTotalAnswered += prog.answered;
+      zhianTotalQuestions += prog.total;
       html += '<div style="margin-bottom:12px">';
       html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
       html += '<span>'+escHtml(ch.chapter)+'</span>';
@@ -604,32 +620,37 @@ function showProgress() {
       html += '</div>';
     });
   }
-  var overallPercent = totalQuestions > 0 ? Math.round(totalAnswered / totalQuestions * 100) : 0;
-  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
+  html += '</div>';
+  var zhianOverallPercent = zhianTotalQuestions > 0 ? Math.round(zhianTotalAnswered / zhianTotalQuestions * 100) : 0;
+  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:12px">';
   html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
-  html += '<span>總進度</span>';
-  html += '<span>'+totalAnswered+'/'+totalQuestions+' ('+overallPercent+'%)</span>';
+  html += '<span>📙 總進度</span>';
+  html += '<span>'+zhianTotalAnswered+'/'+zhianTotalQuestions+' ('+zhianOverallPercent+'%)</span>';
   html += '</div>';
   html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
-  html += '<div style="background:linear-gradient(90deg,#9b59b6,#8e44ad);width:'+overallPercent+'%;height:100%;transition:width 0.3s"></div>';
+  html += '<div style="background:linear-gradient(90deg,#9b59b6,#8e44ad);width:'+zhianOverallPercent+'%;height:100%;transition:width 0.3s"></div>';
   html += '</div>';
   html += '</div>';
   html += '</div>';
   
 
   // 有機溶劑進度
-  totalAnswered = 0;
-  totalQuestions = 0;
+  var organicTotalAnswered = 0;
+  var organicTotalQuestions = 0;
   html += '<div style="margin-bottom:24px">';
-  html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">🧪 有機溶劑題庫</h4>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  html += '<h4 style="margin:0;color:#2c3e50">🧪 有機溶劑題庫</h4>';
+  html += '<button id="organic-toggle-btn" onclick="toggleProgressSection(\'organic\')" style="padding:6px 12px;background:#1abc9c;color:white;border:none;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer">展開</button>';
+  html += '</div>';
+  html += '<div id="organic-details" style="display:none">';
   if (window.ORGANIC_DATA) {
     var organicKeys = Object.keys(window.ORGANIC_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
     organicKeys.forEach(function(k) {
       var ch = window.ORGANIC_DATA[k];
       var prog = PROGRESS['organic'] && PROGRESS['organic'][k] ? PROGRESS['organic'][k] : { answered: 0, total: ch.total_questions || 0 };
       var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
-      totalAnswered += prog.answered;
-      totalQuestions += prog.total;
+      organicTotalAnswered += prog.answered;
+      organicTotalQuestions += prog.total;
       html += '<div style="margin-bottom:12px">';
       html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
       html += '<span>'+escHtml(ch.chapter)+'</span>';
@@ -641,14 +662,15 @@ function showProgress() {
       html += '</div>';
     });
   }
-  var overallPercent = totalQuestions > 0 ? Math.round(totalAnswered / totalQuestions * 100) : 0;
-  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
+  html += '</div>';
+  var organicOverallPercent = organicTotalQuestions > 0 ? Math.round(organicTotalAnswered / organicTotalQuestions * 100) : 0;
+  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:12px">';
   html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
-  html += '<span>總進度</span>';
-  html += '<span>'+totalAnswered+'/'+totalQuestions+' ('+overallPercent+'%)</span>';
+  html += '<span>🧪 總進度</span>';
+  html += '<span>'+organicTotalAnswered+'/'+organicTotalQuestions+' ('+organicOverallPercent+'%)</span>';
   html += '</div>';
   html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
-  html += '<div style="background:linear-gradient(90deg,#1abc9c,#16a085);width:'+overallPercent+'%;height:100%;transition:width 0.3s"></div>';
+  html += '<div style="background:linear-gradient(90deg,#1abc9c,#16a085);width:'+organicOverallPercent+'%;height:100%;transition:width 0.3s"></div>';
   html += '</div>';
   html += '</div>';
   html += '</div>';
@@ -657,6 +679,21 @@ function showProgress() {
     document.getElementById('progress-content').innerHTML = html;
   document.getElementById('progress-modal').style.display = 'flex';
 }
+
+function toggleProgressSection(source) {
+  var details = document.getElementById(source + '-details');
+  var btn = document.getElementById(source + '-toggle-btn');
+  if (details && btn) {
+    if (details.style.display === 'none') {
+      details.style.display = 'block';
+      btn.textContent = '收合';
+    } else {
+      details.style.display = 'none';
+      btn.textContent = '展開';
+    }
+  }
+}
+
 
 function closeProgress() {
   document.getElementById('progress-modal').style.display = 'none';
