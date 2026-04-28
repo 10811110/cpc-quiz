@@ -616,7 +616,45 @@ function showProgress() {
   html += '</div>';
   html += '</div>';
   
+
+  // 有機溶劑進度
+  totalAnswered = 0;
+  totalQuestions = 0;
+  html += '<div style="margin-bottom:24px">';
+  html += '<h4 style="margin:0 0 12px 0;color:#2c3e50">🧪 有機溶劑題庫</h4>';
+  if (window.ORGANIC_DATA) {
+    var organicKeys = Object.keys(window.ORGANIC_DATA).sort(function(a,b){return parseInt(a)-parseInt(b);});
+    organicKeys.forEach(function(k) {
+      var ch = window.ORGANIC_DATA[k];
+      var prog = PROGRESS['organic'] && PROGRESS['organic'][k] ? PROGRESS['organic'][k] : { answered: 0, total: ch.total_questions || 0 };
+      var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
+      totalAnswered += prog.answered;
+      totalQuestions += prog.total;
+      html += '<div style="margin-bottom:12px">';
+      html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.9rem">';
+      html += '<span>'+escHtml(ch.chapter)+'</span>';
+      html += '<span>'+prog.answered+'/'+prog.total+' ('+percent+'%)</span>';
+      html += '</div>';
+      html += '<div style="background:#ecf0f1;border-radius:10px;height:10px;overflow:hidden">';
+      html += '<div style="background:linear-gradient(90deg,#1abc9c,#16a085);width:'+percent+'%;height:100%;transition:width 0.3s"></div>';
+      html += '</div>';
+      html += '</div>';
+    });
+  }
+  var overallPercent = totalQuestions > 0 ? Math.round(totalAnswered / totalQuestions * 100) : 0;
+  html += '<div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-top:16px">';
+  html += '<div style="display:flex;justify-content:space-between;font-weight:600;color:#2c3e50">';
+  html += '<span>總進度</span>';
+  html += '<span>'+totalAnswered+'/'+totalQuestions+' ('+overallPercent+'%)</span>';
+  html += '</div>';
+  html += '<div style="background:#ecf0f1;border-radius:10px;height:12px;overflow:hidden;margin-top:8px">';
+  html += '<div style="background:linear-gradient(90deg,#1abc9c,#16a085);width:'+overallPercent+'%;height:100%;transition:width 0.3s"></div>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+  
   document.getElementById('progress-content').innerHTML = html;
+    document.getElementById('progress-content').innerHTML = html;
   document.getElementById('progress-modal').style.display = 'flex';
 }
 
