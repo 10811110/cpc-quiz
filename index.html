@@ -2023,10 +2023,12 @@ function showResult() {
     '<div class="mode-badge '+(STATE.mode==='practice'?'practice':STATE.mode==='quiz'?'quiz':STATE.mode==='mistake'?'mistake':'exam')+'">'+(STATE.mode==='practice'?'📖 練習':STATE.mode==='quiz'?'📝 小考':STATE.mode==='mistake'?'📕 錯題本':'🏆 大考')+'</div>' +
     '<div class="result-score">'+pct+'%</div>' +
     '<div class="result-detail">答對 '+correct+' / '+total+' 題</div>' +
+    (pct >= 80 ? '<div style="color:#27ae60;font-weight:600;margin-bottom:12px;">🎉 表現優秀！</div>' : pct >= 60 ? '<div style="color:#f39c12;font-weight:600;margin-bottom:12px;">👍 繼續加油</div>' : '<div style="color:#e74c3c;font-weight:600;margin-bottom:12px;">💪 需要再加強</div>') +
     '<button class="nav-btn primary" onclick="goHome()" style="width:100%;margin-top:8px">返回首頁</button>'+
     '<button class="nav-btn secondary" id="retakeBtn" style="width:100%;margin-top:10px">再考一次</button>'+
     removeBtn +
-    '</div>';
+    '</div>' +
+    renderWrongReview();
   document.getElementById('result-area').style.display = 'block';
   document.getElementById('result-area').innerHTML = res;
   
@@ -2094,6 +2096,48 @@ function showResult() {
     }
   };
   document.getElementById('progress-fill').style.width = '100%';
+}
+
+function renderWrongReview() {
+  var total = STATE.questions.length;
+  var wrong = [];
+  for (var i = 0; i < total; i++) {
+    var q = STATE.questions[i];
+    var answered = STATE.answers[i];
+    var isCorrect = false;
+    if (q.answer === 'A' || q.answer === 'B' || q.answer === 'C' || q.answer === 'D') {
+      isCorrect = (answered === q.answer);
+    } else {
+      var answerMap = {'1':'A','2':'B','3':'C','4':'D'};
+      isCorrect = (answered === answerMap[q.answer]);
+    }
+    if (!isCorrect) {
+      wrong.push({q:q, answered:answered, idx:i});
+    }
+  }
+  if (wrong.length === 0) return '';
+  var html = '<div class="result-box" style="margin-top:16px;text-align:left">' +
+    '<div class="result-title" style="text-align:center;margin-bottom:12px">📕 錯題詳解 ('+wrong.length+'/'+total+')</div>';
+  wrong.forEach(function(item, widx) {
+    var q = item.q;
+    var opts = ['A','B','C','D'];
+    var answerMap = {'1':'A','2':'B','3':'C','4':'D'};
+    var correctLetter = answerMap[q.answer] || q.answer;
+    var correctText = escHtml(opts.indexOf(correctLetter) >= 0 ? q.options[correctLetter] : 'N/A');
+    var userLetter = item.answered || '未作答';
+    var userText = '';
+    if (item.answered && opts.indexOf(item.answered) >= 0) userText = '（' + escHtml(q.options[item.answered]) + '）';
+    html += '<div style="margin-bottom:16px;padding:14px;background:#fdf2f1;border-radius:8px;border-left:4px solid #e74c3c" class="wrong-item">' +
+      '<div style="font-weight:700;color:#2c3e50;margin-bottom:8px;">❌ '+(widx+1)+'. '+escHtml(q.question)+'</div>' +
+      '<div style="font-size:.9rem;margin-bottom:6px">👤 你的答案：<span style="color:#e74c3c;font-weight:600">'+userLetter+'</span>'+userText+'</div>' +
+      '<div style="font-size:.9rem;margin-bottom:8px">✅ 正確答案：<span style="color:#27ae60;font-weight:600">'+correctLetter+'</span>（'+correctText+'）</div>' +
+      (q.analysis ? '<div style="font-size:.9rem;margin-bottom:6px;padding:8px;background:#fff;border-radius:6px"><strong>📖 解析：</strong>'+escHtml(q.analysis)+'</div>' : '') +
+      (q.law ? '<div style="font-size:.85rem;color:#2980b9;margin-bottom:6px"><strong>⚖️ 法規出處：</strong>'+escHtml(q.law)+'</div>' : '') +
+      (q.tip ? '<div style="font-size:.85rem;color:#27ae60"><strong>💡 技巧：</strong>'+escHtml(q.tip)+'</div>' : '') +
+      '</div>';
+  });
+  html += '</div>';
+  return html;
 }
 
 function shuffleArray(arr) {
