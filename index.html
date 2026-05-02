@@ -1348,7 +1348,10 @@ function uploadBackup(folderId, fileId, isAutoBackup, statusEl) {
   
   return fetch(url, {
     method: method,
-    headers: { 'Authorization': 'Bearer ' + googleToken },
+    headers: {
+      'Authorization': 'Bearer ' + googleToken,
+      'Content-Type': 'multipart/related; boundary=-------314159265358979323846'
+    },
     body: createMultipartBody(PROGRESS, BACKUP_FILENAME, fileId ? null : folderId)
   })
   .then(function(response) {
@@ -1374,7 +1377,7 @@ function uploadBackup(folderId, fileId, isAutoBackup, statusEl) {
   });
 }
 
-// 從 Google Drive 下載備份
+// 從 Google Drive 下載備份（自動處理舊版 multipart 格式）
 function downloadBackup(fileId, statusEl) {
   return fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', {
     headers: { 'Authorization': 'Bearer ' + googleToken }
@@ -1383,9 +1386,32 @@ function downloadBackup(fileId, statusEl) {
     if (!r.ok) {
       throw new Error('下載失敗 (HTTP ' + r.status + ')');
     }
-    return r.json();
+    return r.text();
   })
-  .then(function(data) {
+  .then(function(rawText) {
+    var jsonText = rawText;
+    // 舊版沒設 Content-Type，Google Drive 把整個 multipart body 存進去
+    // 如果開頭是 '--'，嘗試提取第二個 JSON 部分
+    if (rawText.trim().indexOf('--') === 0) {
+      var parts = rawText.split(/\r?\n--/);
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].indexOf('Content-Type: application/json') >= 0) {
+          var lines = parts[i].split(/\r?\n/);
+          for (var j = 0; j < lines.length; j++) {
+            var line = lines[j].trim();
+            if (line && line.indexOf('Content-Type') !== 0 && line.indexOf('Content-Length') !== 0 && line.indexOf('Content-Length') !== 0 && line.indexOf('--') !== 0) {
+              if (line.charAt(0) === '{' || line.charAt(0) === '[') {
+                jsonText = line;
+                break;
+              }
+            }
+          }
+          break;
+        }
+      }
+      console.log('⚠️ 偵測到舊格式備份，自動提取 JSON');
+    }
+    var data = JSON.parse(jsonText);
     PROGRESS = data;
     saveProgress();
     var now = new Date();
