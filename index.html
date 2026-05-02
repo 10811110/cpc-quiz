@@ -1346,25 +1346,33 @@ function uploadBackup(folderId, fileId, isAutoBackup, statusEl) {
   
   var method = fileId ? 'PATCH' : 'POST';
   
+  // 封裝要備份的資料：進度 + 錯題本 + 考試紀錄
+  var backupData = {
+    progress: PROGRESS,
+    mistakeBook: MISTAKE_BOOK,
+    examHistory: EXAM_HISTORY,
+    version: 2
+  };
+  
   return fetch(url, {
     method: method,
     headers: {
       'Authorization': 'Bearer ' + googleToken,
       'Content-Type': 'multipart/related; boundary=-------314159265358979323846'
     },
-    body: createMultipartBody(PROGRESS, BACKUP_FILENAME, fileId ? null : folderId)
+    body: createMultipartBody(backupData, BACKUP_FILENAME, fileId ? null : folderId)
   })
   .then(function(response) {
     if (response.ok) {
       var now = new Date();
       var timeStr = now.toLocaleString('zh-TW');
-      if (statusEl) statusEl.textContent = '✅ 最後備份：' + timeStr;
+      if (statusEl) statusEl.textContent = '最後備份：' + timeStr;
       localStorage.setItem('lastBackup', timeStr);
       localStorage.setItem('progressModified', timeStr);
       if (!isAutoBackup) {
         alert('備份成功！\n檔案已儲存至 Google Drive / ' + DRIVE_FOLDER_NAME + '/' + BACKUP_FILENAME);
       } else {
-        console.log('✅ 自動備份成功 (' + timeStr + ')');
+        console.log('自動備份成功 (' + timeStr + ')');
       }
     } else {
       return response.json().then(function(errData) {
@@ -1412,13 +1420,33 @@ function downloadBackup(fileId, statusEl) {
       console.log('⚠️ 偵測到舊格式備份，自動提取 JSON');
     }
     var data = JSON.parse(jsonText);
-    PROGRESS = data;
-    saveProgress();
+    // 判斷新舊格式：v2 包裝了 progress + mistakeBook + examHistory
+    var restored = [];
+    if (data.version === 2 || (data.progress !== undefined && typeof data.progress === 'object')) {
+      PROGRESS = data.progress || {};
+      saveProgress();
+      restored.push('進度');
+      if (data.mistakeBook) {
+        MISTAKE_BOOK = data.mistakeBook;
+        saveMistakeBook();
+        restored.push('錯題本');
+      }
+      if (data.examHistory) {
+        EXAM_HISTORY = data.examHistory;
+        saveExamHistory();
+        restored.push('考試紀錄');
+      }
+    } else {
+      // 舊格式：data 本身就是 PROGRESS
+      PROGRESS = data;
+      saveProgress();
+      restored.push('進度');
+    }
     var now = new Date();
     var timeStr = now.toLocaleString('zh-TW');
     if (statusEl) statusEl.textContent = '✅ 最後恢復：' + timeStr;
     localStorage.setItem('progressModified', timeStr);
-    alert('✅ 已從雲端還原進度！\n時間：' + timeStr);
+    alert('已從雲端還原以下資料：\n' + restored.join('、') + '\n\n時間：' + timeStr);
     showProgress();
   })
   .catch(function(err) {
@@ -1429,7 +1457,7 @@ function downloadBackup(fileId, statusEl) {
 }
 
 // 建立 multipart body for Drive API upload
-function createMultipartBody(progress, filename, folderId) {
+function createMultipartBody(data, filename, folderId) {
   var boundary = '-------314159265358979323846';
   var delimiter = '\r\n--' + boundary + '\r\n';
   var close_delim = '\r\n--' + boundary + '--';
@@ -1441,7 +1469,7 @@ function createMultipartBody(progress, filename, folderId) {
   var body = delimiter + 'Content-Type: application/json\r\n\r\n' +
              JSON.stringify(metadata) +
              delimiter + 'Content-Type: application/json\r\n\r\n' +
-             JSON.stringify(progress) +
+             JSON.stringify(data) +
              close_delim;
   
   return body;
