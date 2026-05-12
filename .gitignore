@@ -5,5 +5,16 @@ node_modules
 *.mjs
 *.md
 !題庫對話快速重啟指南.md
+!organic_solvent_no_answer_list.md
 甲業*.json
 deploy_temp/
+
+# 開發工具與暫存檔
+organic_pdf.txt
+organic_solvent.json
+*.bak
+
+# 原始題庫與法規（太大，不進 git）
+三張證照/
+職安法/
+職安法_txt/
