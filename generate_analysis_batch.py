@@ -66,42 +66,35 @@ def read_laws():
             with open(os.path.join(LAWS_DIR, f), 'r', encoding='utf-8') as fh:
                 texts.append(f"--- {f} ---\n{fh.read()}")
     full = "\n\n".join(texts)
-    return full[:15000]  # 取前 15000 字
+    return full[:12000]  # 取前 12000 字
 
 def call_model(prompt, timeout=300):
-    """呼叫 Ollama generate，支持重試"""
+    """呼叫 Ollama generate via urllib (避免 subprocess timeout)"""
+    import urllib.request
     payload = json.dumps({
         "model": MODEL,
         "prompt": prompt,
         "stream": False,
         "options": {"temperature": 0.2}
-    })
-    
-    for attempt in range(2):  # 最多重試1次
-        start = time.time()
-        result = subprocess.run(
-            ["curl", "-s", f"{OLLAMA_URL}/api/generate", "-d", payload],
-            capture_output=True, text=True, encoding='utf-8',
-            timeout=timeout
-        )
-        elapsed = time.time() - start
-        
-        try:
-            resp = json.loads(result.stdout)
-            response = resp.get("response", "").strip()
-            # 檢查 done 標記
-            if not resp.get('done'):
-                print(f"  [warning] 模型未完成 ({elapsed:.1f}s)，重試...")
-                if attempt == 0:
-                    continue
-            return response, elapsed
-        except Exception as e:
-            print(f"  [error] 解析失敗 ({elapsed:.1f}s): {str(e)[:60]}")
-            if attempt == 0:
-                time.sleep(2)
-                continue
+    }).encode('utf-8')
 
-    return "", 0
+    req = urllib.request.Request(
+        f"{OLLAMA_URL}/api/generate",
+        data=payload,
+        headers={'Content-Type': 'application/json'},
+        method='POST'
+    )
+
+    start = time.time()
+    try:
+        resp = urllib.request.urlopen(req, timeout=timeout)
+        data = json.loads(resp.read())
+        elapsed = time.time() - start
+        return data.get("response", "").strip(), elapsed
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"  [error] API 失敗 ({elapsed:.1f}s): {type(e).__name__}")
+        return "", elapsed
 
 def build_batch_prompt(questions, law_context):
     """為一批題目建構 prompt"""
