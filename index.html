@@ -1291,6 +1291,18 @@ function executeBackup(isAutoBackup) {
       
       // 如果雲端版本較新，提示用戶
       if (cloudModifiedTime > localModifiedTime) {
+        // 偵測全新裝置（本地從未有進度，但雲端有備份）→ 自動恢復雲端版本，避免空白覆蓋
+        var hasLocalProgress = localStorage.getItem('progress') && localStorage.getItem('progress') !== '{}';
+        var hasLocalModified = localStorage.getItem('progressModified') || localStorage.getItem('lastBackup');
+        var isFreshDevice = params.existingFile && !hasLocalProgress && !hasLocalModified;
+        
+        if (isFreshDevice) {
+          console.log('📱 偵測到全新裝置且雲端有備份，自動從雲端恢復...');
+          if (statusEl) statusEl.textContent = '📱 全新裝置，自動恢復雲端進度...';
+          downloadBackup(params.existingFile.id, statusEl);
+          return Promise.resolve();
+        }
+        
         var cloudTimeStr = cloudModifiedTime.toLocaleString('zh-TW');
         var localTimeStr = localModifiedTime.toLocaleString('zh-TW');
         
