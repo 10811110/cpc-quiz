@@ -1777,18 +1777,18 @@ function proceedMode() {
       ? CHAPTERS // 一般業用 chapters.json
       : window.JIA_DATA; // 甲業用內嵌
     
-    // 載入所有題目
-    var loadPromises = [];
-    for (var k in files) {
-      var ch = files[k];
-      if (ch.file) {
-        loadPromises.push (
+   // 載入所有題目
+   var loadPromises = [];
+   for (var k in files) {
+     var ch = files[k];
+     if (ch.file) {
+       loadPromises.push (
           loadChapterQuestions('../data/raw/' + ch.file).then(function(qs) {
-            qs.forEach(function(q) { q._ch = k; });
-            return qs;
-          })
-        );
-      }
+           qs.forEach(function(q) { q._ch = k; });
+           return qs;
+         });
+     }
+   }
     }
     
     Promise.all(loadPromises).then(function(results) {
