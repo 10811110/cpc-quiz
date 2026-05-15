@@ -1782,8 +1782,8 @@ function proceedMode() {
     for (var k in files) {
       var ch = files[k];
       if (ch.file) {
-        loadPromises.push(
-          loadChapterQuestions(ch.file).then(function(qs) {
+        loadPromises.push (
+          loadChapterQuestions('../data/raw/' + ch.file).then(function(qs) {
             qs.forEach(function(q) { q._ch = k; });
             return qs;
           })
@@ -1926,34 +1926,34 @@ function selectChapter(id) {
     document.getElementById('result-area').style.display = 'none';
     goScreen('quiz-screen');
     renderQuestion();
-  } else if (src === 'zhian') {
-    // 技術士題庫：從外部檔案載入
-    loadChapterQuestions(chData.file).then(function(qs) {
-      if (STATE.mode === 'quiz') { shuffleArray(qs); }
-      qs.forEach(function(q) { q._ch = id; });
-      STATE.questions = qs;
-      STATE.current = 0;
-      STATE.answers = [];
-      STATE.done = false;
-      document.getElementById('nav-row').style.display = 'flex';
-      document.getElementById('result-area').style.display = 'none';
-      goScreen('quiz-screen');
-      renderQuestion();
-    });
-  } else {
-    // 一般業題庫：從外部檔案載入
-    loadChapterQuestions(chData.file).then(function(qs) {
-      if (STATE.mode === 'quiz') { shuffleArray(qs); }
-      STATE.questions = qs;
-      STATE.current = 0;
-      STATE.answers = [];
-      STATE.done = false;
-      document.getElementById('nav-row').style.display = 'flex';
-      document.getElementById('result-area').style.display = 'none';
-      goScreen('quiz-screen');
-      renderQuestion();
-    });
-  }
+    } else if (src === 'zhian') {
+      // 技術士題庫：從外部檔案載入
+      loadChapterQuestions('../data/raw/' + chData.file).then(function(qs) {
+        if (STATE.mode === 'quiz') { shuffleArray(qs); }
+        qs.forEach(function(q) { q._ch = id; });
+        STATE.questions = qs;
+        STATE.current = 0;
+        STATE.answers = [];
+        STATE.done = false;
+        document.getElementById('nav-row').style.display = 'flex';
+        document.getElementById('result-area').style.display = 'none';
+        goScreen('quiz-screen');
+        renderQuestion();
+      });
+    } else {
+      // 一般業題庫：從外部檔案載入
+      loadChapterQuestions('../data/raw/' + chData.file).then(function(qs) {
+        if (STATE.mode === 'quiz') { shuffleArray(qs); }
+        STATE.questions = qs;
+        STATE.current = 0;
+        STATE.answers = [];
+        STATE.done = false;
+        document.getElementById('nav-row').style.display = 'flex';
+        document.getElementById('result-area').style.display = 'none';
+        goScreen('quiz-screen');
+        renderQuestion();
+      });
+    }
 }
 
 function renderQuestion() {
