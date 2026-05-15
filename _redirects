@@ -1,4 +1,3 @@
 /data/*   /data/*   200
 /assets/* /assets/* 200
-/   /web/index.html   200
-/*  /web/index.html   200
+/         /web/index.html   200
