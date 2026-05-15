@@ -1914,18 +1914,18 @@ function selectChapter(id) {
     document.getElementById('result-area').style.display = 'none';
     goScreen('quiz-screen');
     renderQuestion();
-  } else if (src === 'organic' && window.ORGANIC_DATA[String(id)] && window.ORGANIC_DATA[String(id)].questions) {
-    // 有機溶劑題庫：題目已內嵌，直接使用
-    var qs = window.ORGANIC_DATA[String(id)].questions;
-    if (STATE.mode === 'quiz') { shuffleArray(qs); }
-    STATE.questions = qs;
-    STATE.current = 0;
-    STATE.answers = [];
-    STATE.done = false;
-    document.getElementById('nav-row').style.display = 'flex';
-    document.getElementById('result-area').style.display = 'none';
-    goScreen('quiz-screen');
-    renderQuestion();
+      } else if (src === 'organic' && window.ORGANIC_DATA[String(id)] && window.ORGANIC_DATA[String(id)].questions) {
+      // 有機溶劑題庫：題目已內嵌，直接使用
+      var qs = window.ORGANIC_DATA[String(id)].questions;
+      if (STATE.mode === 'quiz') { shuffleArray(qs); }
+      STATE.questions = qs;
+      STATE.current = 0;
+      STATE.answers = [];
+      STATE.done = false;
+      document.getElementById('nav-row').style.display = 'flex';
+      document.getElementById('result-area').style.display = 'none';
+      goScreen('quiz-screen');
+      renderQuestion();
     } else if (src === 'zhian') {
       // 技術士題庫：從外部檔案載入
       loadChapterQuestions('../data/raw/' + chData.file).then(function(qs) {
