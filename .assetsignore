@@ -1,0 +1,9 @@
+﻿.git/
+scripts/
+scripts_backup/
+三張證照/
+職安法/
+職安法_txt/
+*.py
+README.md
+update_script_paths.py
