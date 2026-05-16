@@ -115,13 +115,29 @@ function selectSource(src) {
 
   } else if (src === 'jia') {
 
-    var d2 = document.getElementById('quizData2');
+    fetch('../data/raw/jia_data.json')
 
-    window.JIA_DATA = JSON.parse(d2.textContent);
+      .then(r => r.json())
 
-    CHAPTERS = window.JIA_DATA;
+      .then(function(data) {
 
-    goScreen('mode-select');
+        window.JIA_DATA = data;
+
+        CHAPTERS = data;
+
+        goScreen('mode-select');
+
+      })
+
+      .catch(function(err) {
+
+        console.error('載入甲業題庫失敗:', err);
+
+        alert('載入甲業題庫失敗，請檢查網路連線');
+
+      });
+
+    return;
 
   } else if (src === 'zhian') {
 
@@ -159,15 +175,29 @@ function selectSource(src) {
 
   } else if (src === 'organic') {
 
-    // 有機溶劑題庫：使用內嵌數據
+    fetch('../data/raw/organic_data.json')
 
-    var d3 = document.getElementById('quizData3');
+      .then(r => r.json())
 
-    window.ORGANIC_DATA = JSON.parse(d3.textContent);
+      .then(function(data) {
 
-    CHAPTERS = window.ORGANIC_DATA;
+        window.ORGANIC_DATA = data;
 
-    goScreen('mode-select');
+        CHAPTERS = data;
+
+        goScreen('mode-select');
+
+      })
+
+      .catch(function(err) {
+
+        console.error('載入有機題庫失敗:', err);
+
+        alert('載入有機題庫失敗，請檢查網路連線');
+
+      });
+
+    return;
 
   } else {
 
@@ -213,17 +243,6 @@ function loadChapterQuestions(filename) {
 
 function init() {
 
-  var d = document.getElementById('quizData');
-
-  var d2 = document.getElementById('quizData2');
-
-  if (!d && !d2) {
-
-    document.getElementById('home').innerHTML='<p style="text-align:center;padding:40px;color:red">載入失敗：找不到題目數據</p>';
-
-    return;
-
-  }
 
   try {
 
@@ -239,15 +258,6 @@ function init() {
 
     window.ORGANIC_DATA = null;  // 保存有機溶劑數據
 
-    // 甲業題庫（如果有）
-
-    if (d2 && d2.textContent.trim()) {
-
-      window.JIA_DATA = JSON.parse(d2.textContent);
-
-      CHAPTERS = window.JIA_DATA;  // 預設顯示甲業
-
-    }
 
     // 一般業題庫：載入外部 chapters.json
 
@@ -2939,11 +2949,8 @@ function selectMode(mode) {
 
   if (CURRENT_SOURCE === 'jia') {
 
-    var d2 = document.getElementById('quizData2');
-
-    window.JIA_DATA = JSON.parse(d2.textContent); // 使用獨立變數儲存甲業數據
-
     proceedMode();
+
 
   } else if (CURRENT_SOURCE === 'zhian') {
 
