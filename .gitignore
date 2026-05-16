@@ -1,23 +1,23 @@
-node_modules
+﻿node_modules
 *.log
 *.db
 *.py
 *.mjs
 *.md
-!題庫對話快速重啟指南.md
+!憿澈撠店敹恍?????md
 !organic_solvent_no_answer_list.md
-甲業*.json
+?脫平*.json
 deploy_temp/
 
-# 開發工具與暫存檔
+# ?撌亙?摮?
 organic_pdf.txt
 organic_solvent.json
 *.bak
 
-# 原始題庫與法規（太大，不進 git）
-三張證照/
-職安法/
-職安法_txt/
+# ??憿澈??閬?憭芸之嚗???git嚗?
+銝撐霅/
+?瑕?瘜?
+?瑕?瘜txt/
 
 # wrangler files
 .wrangler
@@ -25,3 +25,4 @@ organic_solvent.json
 !.dev.vars.example
 .env*
 !.env.example
+.bin/
