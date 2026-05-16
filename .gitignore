@@ -18,3 +18,10 @@ organic_solvent.json
 三張證照/
 職安法/
 職安法_txt/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
