@@ -258,15 +258,15 @@ function normalizeQuestions(questions) {
 }
 
 function loadChapterQuestions(filename) {
-
+function loadChapterQuestions(filename) {
   return fetch(filename).then(r => r.json()).then(function(d) {
     return normalizeQuestions(d.questions || []);
   });
+}
 
 
 
 function init() {
-
 
   try {
 
