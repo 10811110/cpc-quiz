@@ -39,7 +39,7 @@
 
       <div class="mode-card" onclick="selectSource('luo')">
 
-        <div style="font-size:2rem">📘</div>
+        <div class="icon-wrap">📘</div>
 
         <h2>一般業職業安全衛生<br>業務主管精選</h2>
 
@@ -49,7 +49,7 @@
 
       <div class="mode-card" onclick="selectSource('jia')">
 
-        <div style="font-size:2rem">📗</div>
+        <div class="icon-wrap">📗</div>
 
         <h2>甲業題庫</h2>
 
@@ -59,7 +59,7 @@
 
       <div class="mode-card" onclick="selectSource('zhian')">
 
-        <div style="font-size:2rem">📙</div>
+        <div class="icon-wrap">📙</div>
 
         <h2>技術士技能檢定<br>職業安全衛生共同科目</h2>
 
@@ -69,7 +69,7 @@
 
       <div class="mode-card" onclick="selectSource('organic')">
 
-        <div style="font-size:2rem">🧪</div>
+        <div class="icon-wrap">🧪</div>
 
         <h2>有機溶劑作業主管<br>精選題庫</h2>
 
@@ -79,7 +79,7 @@
 
       <div class="mode-card" onclick="openMistakeBook()" style="border-color:#f39c12">
 
-        <div style="font-size:2rem">📕</div>
+        <div class="icon-wrap">📕</div>
 
         <h2>錯題本</h2>
 
@@ -101,7 +101,7 @@
 
       <div class="mode-card" onclick="selectMode('practice')">
 
-        <div style="font-size:2.5rem">📖</div>
+        <div class="icon-wrap">📖</div>
 
         <h2>練習模式</h2>
 
@@ -111,7 +111,7 @@
 
       <div class="mode-card" onclick="selectMode('quiz')">
 
-        <div style="font-size:2.5rem">📝</div>
+        <div class="icon-wrap">📝</div>
 
         <h2>小考模式</h2>
 
@@ -121,7 +121,7 @@
 
       <div class="mode-card" onclick="selectMode('exam')">
 
-        <div style="font-size:2.5rem">🏆</div>
+        <div class="icon-wrap">🏆</div>
 
         <h2>大考模式</h2>
 
@@ -3838,7 +3838,7 @@ function renderQuestion() {
 
     html += '<button class="option-btn'+optClass+'" onclick="selectOption(\''+o+'\')">' +
 
-      '<strong>'+o+'. </strong>'+escHtml(q.options[o])+'</button>';
+      '<span class="opt-letter">'+o+'</span>'+escHtml(q.options[o])+'</button>';
 
   });
 
@@ -4378,7 +4378,7 @@ function openMistakeBook() {
 
     html += '<div class="mode-card" onclick="startMistakePractice(\'luo\')">' +
 
-      '<div style="font-size:2rem">📘</div>' +
+      '<div class="icon-wrap">📘</div>' +
 
       '<h2>一般業錯題</h2>' +
 
@@ -4394,7 +4394,7 @@ function openMistakeBook() {
 
     html += '<div class="mode-card" onclick="startMistakePractice(\'jia\')">' +
 
-      '<div style="font-size:2rem">📗</div>' +
+      '<div class="icon-wrap">📗</div>' +
 
       '<h2>甲業錯題</h2>' +
 
