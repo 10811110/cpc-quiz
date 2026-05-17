@@ -1,7 +1,9 @@
 ﻿node_modules
 *.log
 *.db
-*.py
+/*.py
+!scripts/*.py
+!update_script_paths.py
 *.mjs
 *.md
 !憿澈撠店敹恍?????md

@@ -1,4 +1,4 @@
-// Storage versioning
+﻿// Storage versioning
 const STORAGE_VERSION = 2;
 
 function loadStorage(key, defaultValue) {
@@ -67,7 +67,7 @@ function saveProgress() {
 
 }
 
-var SOURCE_NAMES = {"luo":"一般業題庫 · 725 題","jia":"甲業題庫 · 1011 題","zhian":"技術士題庫 · 100 題 (5 章)","organic":"有機溶劑題庫 · 359 題 (7 章)"};
+var SOURCE_NAMES = {"luo":"一般業題庫 · " + APP_CONFIG.TOTAL_QUESTIONS.luo + " 題","jia":"甲業題庫 · " + APP_CONFIG.TOTAL_QUESTIONS.jia + " 題","zhian":"技術士題庫 · " + APP_CONFIG.TOTAL_QUESTIONS.zhian + " 題 (5 章)","organic":"有機溶劑題庫 · " + APP_CONFIG.TOTAL_QUESTIONS.organic + " 題 (7 章)"};
 
 var STATE = {screen:'home',mode:null,chId:null,questions:[],current:0,answers:[],done:false};
 
@@ -122,6 +122,11 @@ function selectSource(src) {
       .then(function(data) {
 
         window.JIA_DATA = data;
+        for (var k in data) {
+          if (data[k].questions) {
+            normalizeQuestions(data[k].questions);
+          }
+        }
 
         CHAPTERS = data;
 
@@ -182,6 +187,11 @@ function selectSource(src) {
       .then(function(data) {
 
         window.ORGANIC_DATA = data;
+        for (var k in data) {
+          if (data[k].questions) {
+            normalizeQuestions(data[k].questions);
+          }
+        }
 
         CHAPTERS = data;
 
@@ -233,11 +243,25 @@ function loadChaptersData() {
 
 
 
+function normalizeAnswer(q) {
+  var map = {"1":"A","2":"B","3":"C","4":"D"};
+  if (q.answer === "1" || q.answer === "2" || q.answer === "3" || q.answer === "4") {
+    q.answer = map[q.answer];
+  }
+  return q;
+}
+
+function normalizeQuestions(questions) {
+  if (!questions) return [];
+  questions.forEach(function(q) { normalizeAnswer(q); });
+  return questions;
+}
+
 function loadChapterQuestions(filename) {
 
-  return fetch(filename).then(r => r.json()).then(d => d.questions || []);
-
-}
+  return fetch(filename).then(r => r.json()).then(function(d) {
+    return normalizeQuestions(d.questions || []);
+  });
 
 
 
@@ -1206,6 +1230,24 @@ function exportProgress() {
 
 
 // 進度匯入功能
+// 驗證進度資料格式
+function validateProgress(data) {
+  if (!data || typeof data !== "object") return false;
+  var validSources = {luo: true, jia: true, zhian: true, organic: true};
+  for (var src in data) {
+    if (!validSources[src]) return false;
+    var chapters = data[src];
+    if (!chapters || typeof chapters !== "object") return false;
+    for (var chId in chapters) {
+      var prog = chapters[chId];
+      if (!prog || typeof prog !== "object") return false;
+      if (typeof prog.answered !== "number" || typeof prog.total !== "number") return false;
+      if (prog.answered < 0 || prog.total < 0) return false;
+    }
+  }
+  return true;
+}
+
 
 function importProgress() {
 
@@ -1229,7 +1271,7 @@ function importProgress() {
 
         var data = JSON.parse(e.target.result);
 
-        if (confirm('匯入的進度將覆蓋現有進度，確定要繼續嗎？')) {
+        if (!validateProgress(data)) { alert("進度資料格式無效，請確認檔案內容正確"); return; }
 
           PROGRESS = data;
 
@@ -1299,7 +1341,7 @@ function importProgressFromURL() {
 
       var data = JSON.parse(json);
 
-      if (confirm('偵測到分享連結！\n匯入此進度將覆蓋現有進度，確定要繼續嗎？')) {
+        if (!validateProgress(data)) { alert("進度資料格式無效，請確認連結內容正確"); return; }
 
         PROGRESS = data;
 
@@ -3124,7 +3166,7 @@ function proceedMode() {
 
    var loadPromises = [];
 
-   for (var k in files) {
+   for (let k in files) {
 
      var ch = files[k];
 
@@ -3164,7 +3206,7 @@ function proceedMode() {
 
       doneKeys.forEach(function(k){ doneSet[k] = true; });
 
-      var totalPool = src === 'luo' ? 725 : 1011;
+      var totalPool = APP_CONFIG.TOTAL_QUESTIONS[src] || 0;
 
       var remaining = doneKeys.length >= totalPool
 
@@ -3351,133 +3393,40 @@ function proceedMode() {
 
 
 function selectChapter(id) {
-
   STATE.chId = id;
-
   var src = CURRENT_SOURCE;
-
-  var chData = src === 'luo' ? CHAPTERS[String(id)] : 
-
-               (src === 'zhian' ? window.ZHIAN_DATA[String(id)] : 
-
-               (src === 'organic' ? window.ORGANIC_DATA[String(id)] : 
-
+  var chData = src === 'luo' ? CHAPTERS[String(id)] :
+               (src === 'zhian' ? window.ZHIAN_DATA[String(id)] :
+               (src === 'organic' ? window.ORGANIC_DATA[String(id)] :
                window.JIA_DATA[String(id)]));
-
-  // 移除舊的解析區塊
-
   var oldAnalysis = document.querySelector('.analysis-block');
-
   if (oldAnalysis) oldAnalysis.remove();
-
-  // 載入題目
-
-  if (src === 'jia' && window.JIA_DATA[String(id)] && window.JIA_DATA[String(id)].questions) {
-
-    // 甲業題庫：題目已內嵌，直接使用
-
-    var qs = window.JIA_DATA[String(id)].questions;
-
+  function startQuestions(qs) {
     if (STATE.mode === 'quiz') { shuffleArray(qs); }
-
     STATE.questions = qs;
-
     STATE.current = 0;
-
     STATE.answers = [];
-
     STATE.done = false;
-
     document.getElementById('nav-row').style.display = 'flex';
-
     document.getElementById('result-area').style.display = 'none';
-
     goScreen('quiz-screen');
-
     renderQuestion();
-
-      } else if (src === 'organic' && window.ORGANIC_DATA[String(id)] && window.ORGANIC_DATA[String(id)].questions) {
-
-      // 有機溶劑題庫：題目已內嵌，直接使用
-
-      var qs = window.ORGANIC_DATA[String(id)].questions;
-
-      if (STATE.mode === 'quiz') { shuffleArray(qs); }
-
-      STATE.questions = qs;
-
-      STATE.current = 0;
-
-      STATE.answers = [];
-
-      STATE.done = false;
-
-      document.getElementById('nav-row').style.display = 'flex';
-
-      document.getElementById('result-area').style.display = 'none';
-
-      goScreen('quiz-screen');
-
-      renderQuestion();
-
-    } else if (src === 'zhian') {
-
-      // 技術士題庫：從外部檔案載入
-
-      loadChapterQuestions('../data/raw/' + chData.file).then(function(qs) {
-
-        if (STATE.mode === 'quiz') { shuffleArray(qs); }
-
-        qs.forEach(function(q) { q._ch = id; });
-
-        STATE.questions = qs;
-
-        STATE.current = 0;
-
-        STATE.answers = [];
-
-        STATE.done = false;
-
-        document.getElementById('nav-row').style.display = 'flex';
-
-        document.getElementById('result-area').style.display = 'none';
-
-        goScreen('quiz-screen');
-
-        renderQuestion();
-
-      });
-
-    } else {
-
-      // 一般業題庫：從外部檔案載入
-
-      loadChapterQuestions('../data/raw/' + chData.file).then(function(qs) {
-
-        if (STATE.mode === 'quiz') { shuffleArray(qs); }
-
-        STATE.questions = qs;
-
-        STATE.current = 0;
-
-        STATE.answers = [];
-
-        STATE.done = false;
-
-        document.getElementById('nav-row').style.display = 'flex';
-
-        document.getElementById('result-area').style.display = 'none';
-
-        goScreen('quiz-screen');
-
-        renderQuestion();
-
-      });
-
-    }
-
+  }
+  if (src === 'jia' && window.JIA_DATA[String(id)] && window.JIA_DATA[String(id)].questions) {
+    startQuestions(window.JIA_DATA[String(id)].questions);
+  } else if (src === 'organic' && window.ORGANIC_DATA[String(id)] && window.ORGANIC_DATA[String(id)].questions) {
+    startQuestions(window.ORGANIC_DATA[String(id)].questions);
+  } else if (src === 'zhian') {
+    loadChapterQuestions('../data/raw/' + chData.file).then(function(qs) {
+      qs.forEach(function(q) { q._ch = id; });
+      startQuestions(qs);
+    });
+  } else {
+    loadChapterQuestions('../data/raw/' + chData.file).then(function(qs) {
+      startQuestions(qs);
+    });
+  }
 }
-
 
 
 function renderQuestion() {
@@ -3523,19 +3472,7 @@ function renderQuestion() {
   var showAnswer = (STATE.mode === 'practice' || STATE.mode === 'mistake') && answered !== undefined;
 
   
-
-  // 計算正確答案的字母（處理甲業數字答案）
-
   var correctAnswer = q.answer;
-
-  if (q.answer === '1' || q.answer === '2' || q.answer === '3' || q.answer === '4') {
-
-    var answerMap = {'1': 'A', '2': 'B', '3': 'C', '4': 'D'};
-
-    correctAnswer = answerMap[q.answer];
-
-  }
-
   
 
   opts.forEach(function(o) {
@@ -3592,19 +3529,7 @@ function selectOption(opt) {
 
     isCorrect = (opt === q.answer);
 
-  } else {
-
-    // 甲業：答案是數字，需要轉換為字母（1=A, 2=B, 3=C, 4=D）
-
-    var answerMap = {'1': 'A', '2': 'B', '3': 'C', '4': 'D'};
-
-    var correctOpt = answerMap[q.answer];
-
-    isCorrect = (opt === correctOpt);
-
   }
-
-  
 
   // 記錄答錯的題目到錯題本
 
@@ -3682,19 +3607,19 @@ function selectOption(opt) {
 
       if (q.law) {
 
-        html += '<div style="margin-bottom:8px;color:#2980b9"><strong>⚖️ 法規出處：</strong>'+q.law+'</div>';
+        html += '<div style="margin-bottom:8px;color:#2980b9"><strong>⚖️ 法規出處：</strong>'+escHtml(q.law)+'</div>';
 
       }
 
       if (q.tip) {
 
-        html += '<div style="color:#27ae60"><strong>💡 答題技巧：</strong>'+q.tip+'</div>';
+        html += '<div style="color:#27ae60"><strong>💡 答題技巧：</strong>'+escHtml(q.tip)+'</div>';
 
       }
 
       if (!q.analysis && !q.law && !q.tip && q.note) {
 
-        html += '<div>📝 '+q.note+'</div>';
+        html += '<div>📝 '+escHtml(q.note)+'</div>';
 
       }
 
@@ -3822,7 +3747,7 @@ function showResult() {
 
     '<div class="result-detail">答對 '+correct+' / '+total+' 題</div>' +
 
-    (pct >= 80 ? '<div style="color:#27ae60;font-weight:600;margin-bottom:12px;">🎉 表現優秀！</div>' : pct >= 60 ? '<div style="color:#f39c12;font-weight:600;margin-bottom:12px;">👍 繼續加油</div>' : '<div style="color:#e74c3c;font-weight:600;margin-bottom:12px;">💪 需要再加強</div>') +
+    (pct >= APP_CONFIG.PASSING_SCORE_EXCELLENT ? '\u003cdiv style="color:#27ae60;font-weight:600;margin-bottom:12px;"\u003e🎉 表現優秀！\u003c/div\u003e' : pct >= APP_CONFIG.PASSING_SCORE_GOOD ? '\u003cdiv style="color:#f39c12;font-weight:600;margin-bottom:12px;"\u003e👍 繼續加油\u003c/div\u003e' : '\u003cdiv style="color:#e74c3c;font-weight:600;margin-bottom:12px;"\u003e💪 需要再加強\u003c/div\u003e') +
 
     '<button class="nav-btn primary" onclick="goHome()" style="width:100%;margin-top:8px">返回首頁</button>'+
 
@@ -3914,7 +3839,7 @@ function showResult() {
 
     var done = EXAM_HISTORY[src].length;
 
-    var total = src === 'luo' ? 725 : 1011;
+    var total = APP_CONFIG.TOTAL_QUESTIONS[src] || 0;
 
     var retakeBtn = document.getElementById('retakeBtn');
 
@@ -3984,19 +3909,7 @@ function renderWrongReview() {
 
     var answered = STATE.answers[i];
 
-    var isCorrect = false;
-
-    if (q.answer === 'A' || q.answer === 'B' || q.answer === 'C' || q.answer === 'D') {
-
-      isCorrect = (answered === q.answer);
-
-    } else {
-
-      var answerMap = {'1':'A','2':'B','3':'C','4':'D'};
-
-      isCorrect = (answered === answerMap[q.answer]);
-
-    }
+    var isCorrect = (answered === q.answer);
 
     if (!isCorrect) {
 
@@ -4017,11 +3930,7 @@ function renderWrongReview() {
     var q = item.q;
 
     var opts = ['A','B','C','D'];
-
-    var answerMap = {'1':'A','2':'B','3':'C','4':'D'};
-
-    var correctLetter = answerMap[q.answer] || q.answer;
-
+    var correctLetter = q.answer;
     var correctText = escHtml(opts.indexOf(correctLetter) >= 0 ? q.options[correctLetter] : 'N/A');
 
     var userLetter = item.answered || '未作答';

@@ -1,10 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 <html lang="zh-TW">
 
 <head>
 
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googleapis.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://www.googleapis.com https://cpc-oauth-proxy.ben900415.workers.dev; img-src 'self' data:;">
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
@@ -331,6 +332,13 @@
 <script src="config.js"></script>
 <script src="app.js"></script>
 
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(function(err) {
+      console.warn("SW registration failed:", err);
+    });
+  }
+</script>
 
 
 
