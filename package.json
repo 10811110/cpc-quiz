@@ -1,1 +1,16 @@
-﻿
+﻿{
+  "name": "cpc-quiz",
+  "version": "1.0.0",
+  "description": "CPC quiz practice web app",
+  "scripts": {
+    "test": "node tests/e2e.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/10811110/cpc-quiz.git"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}

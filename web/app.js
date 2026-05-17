@@ -1,4 +1,4 @@
-﻿// Storage versioning
+// Storage versioning
 const STORAGE_VERSION = 2;
 
 function loadStorage(key, defaultValue) {
@@ -257,7 +257,6 @@ function normalizeQuestions(questions) {
   return questions;
 }
 
-function loadChapterQuestions(filename) {
 function loadChapterQuestions(filename) {
   return fetch(filename).then(r => r.json()).then(function(d) {
     return normalizeQuestions(d.questions || []);
@@ -1281,7 +1280,6 @@ function importProgress() {
 
           showProgress(); // 重新顯示進度
 
-        }
 
       } catch (err) {
 
@@ -1351,7 +1349,6 @@ function importProgressFromURL() {
 
         alert('進度匯入成功！');
 
-      }
 
     } catch (err) {
 
