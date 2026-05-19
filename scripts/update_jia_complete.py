@@ -113,11 +113,10 @@ for q in questions:
         q['tip'] = tip
         updated += 1
 
-with tmp = str(f'{quiz_dir}data/raw/chapterA1.json') + '.tmp'
+tmp = str(f'{quiz_dir}data/raw/chapterA1.json') + '.tmp'
 with open(tmp, 'w', encoding='utf-8') as f:
     json.dump(chA1, f, ensure_ascii=False, indent=2)
-with os.replace(tmp, f'{quiz_dir}data/raw/chapterA1.json')
-    json.dump(chA1, f, ensure_ascii=False, indent=2)
+os.replace(tmp, f'{quiz_dir}data/raw/chapterA1.json')
 
 
 detailed = sum(1 for q in questions if len(q.get('analysis', '')) > 80 and '本題正確答案' not in q.get('analysis', ''))

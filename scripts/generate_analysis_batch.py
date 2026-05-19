@@ -37,10 +37,11 @@ def load_or_extract_json():
 
 def save_json(data):
     """保存獨立JSON"""
-    with tmp = ORGANIC_JSON + '.tmp'
+    tmp = ORGANIC_JSON + '.tmp'
     with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
-    with os.replace(tmp, ORGANIC_JSON)
+    os.replace(tmp, ORGANIC_JSON)
+
 def save_back_to_html(data):
     """將獨立JSON寫回 web/index.html"""
     with open(INDEX_HTML, 'r', encoding='utf-8') as f:
@@ -58,10 +59,10 @@ def save_back_to_html(data):
     suffix = time.strftime('%Y%m%d_%H%M%S')
     shutil.copy2(INDEX_HTML, f"{INDEX_HTML}.{suffix}.bak")
     
-    with tmp = INDEX_HTML + '.tmp'
+    tmp = INDEX_HTML + '.tmp'
     with open(tmp, 'w', encoding='utf-8') as f:
         f.write(new_html)
-    with os.replace(tmp, INDEX_HTML)
+    os.replace(tmp, INDEX_HTML)
     print(f"已同步回寫 web/index.html，備份於 {INDEX_HTML}.{suffix}.bak")
 
 def read_laws():

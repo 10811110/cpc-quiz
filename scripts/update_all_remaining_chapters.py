@@ -95,11 +95,10 @@ def update_all_chapters():
             q['tip'] = tip
             updated += 1
         
-        with tmp = ch_file + '.tmp'
+        tmp = ch_file + '.tmp'
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(ch, f, ensure_ascii=False, indent=2)
-        with os.replace(tmp, ch_file)
-            json.dump(ch, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, ch_file)
 
         
         # 統計

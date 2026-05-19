@@ -55,11 +55,10 @@ for q in ch5_data['questions']:
         q['law'] = law
         q['tip'] = tip
 
-with tmp = str(f'{quiz_dir}data/raw/chapter5.json') + '.tmp'
+tmp = str(f'{quiz_dir}data/raw/chapter5.json') + '.tmp'
 with open(tmp, 'w', encoding='utf-8') as f:
     json.dump(ch5_data, f, ensure_ascii=False, indent=2)
-with os.replace(tmp, f'{quiz_dir}data/raw/chapter5.json')
-    json.dump(ch5_data, f, ensure_ascii=False, indent=2)
+os.replace(tmp, f'{quiz_dir}data/raw/chapter5.json')
 
 
 detailed = sum(1 for q in ch5_data['questions'] if len(q.get('analysis', '')) > 80 and '本題正確答案' not in q.get('analysis', ''))
