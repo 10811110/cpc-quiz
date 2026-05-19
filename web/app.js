@@ -1,4 +1,4 @@
-// Storage versioning
+﻿// Storage versioning
 const STORAGE_VERSION = 2;
 
 function loadStorage(key, defaultValue) {
@@ -73,7 +73,7 @@ var STATE = {screen:'home',mode:null,chId:null,questions:[],current:0,answers:[]
 
   CURRENT_SOURCE = null;
 
-var NAMES = ["", "第一章 企業經營風險與安全衛生", "第二章 職業安全衛生相關法規", "第三章 職業安全衛生概論", "第四章 職業安全衛生管理系統", "第五章 風險評估", "第六章 承攬管理", "第七章 採購及變更管理", "第八章 緊急應變管理", "第九章 墜落危害預防管理實務", "第十章 機械安全管理實務", "第十一章 火災爆炸危害預防管理實務", "第十二章 感電危害預防管理實務", "第十三章 倒塌崩塌危害預防管理實務", "第十四章 化學性危害預防管理實務", "第十五章 物理性危害預防管理實務", "第十六章 職場健康管理實務", "第十七章 職業災害調查處理與統計"];
+
 
 
 
@@ -81,7 +81,7 @@ function escHtml(s) {
 
   if (!s) return '';
 
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
 }
 
@@ -952,7 +952,7 @@ function showProgress() {
 
   document.getElementById('progress-content').innerHTML = html;
 
-    document.getElementById('progress-content').innerHTML = html;
+
 
   document.getElementById('progress-modal').style.display = 'flex';
 
@@ -1366,7 +1366,7 @@ function importProgressFromURL() {
 
 var GOOGLE_CLIENT_ID = '426710031721-ivj74khe2f46a8t59189356sjahljh9v.apps.googleusercontent.com';
 
-var GOOGLE_REDIRECT_URI = window.location.origin + window.location.pathname; // 使用當前頁面
+var GOOGLE_REDIRECT_URI = APP_CONFIG.OAUTH_REDIRECT_URI || (window.location.origin + window.location.pathname);
 
 // Workers 代理 URL
 
@@ -3097,6 +3097,7 @@ function proceedMode() {
 
         results.forEach(function(qs) { allQuestions = allQuestions.concat(qs); });
 
+        normalizeQuestions(allQuestions);
         shuffleArray(allQuestions);
 
         var doneKeys = EXAM_HISTORY[src] || [];
@@ -3872,7 +3873,7 @@ function showResult() {
 
   // For non-exam modes: override retake to re-run same chapter
 
-  var normRetake = document.querySelector('#result-area .secondary');
+  var normRetake = document.getElementById('retakeBtn');
 
   if (normRetake && normRetake.id !== 'removeMasteredBtn') normRetake.onclick = function() { 
 
@@ -4333,8 +4334,4 @@ if (document.readyState === 'loading') {
 }
 
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").catch(function(err) {
-    console.warn("SW registration failed:", err);
-  });
-}
+

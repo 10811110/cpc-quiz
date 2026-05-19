@@ -5,7 +5,10 @@ const APP_CONFIG = {
   PASSING_SCORE_EXCELLENT: 80,
   PASSING_SCORE_GOOD: 60,
   OAUTH_PROXY_URL: 'https://cpc-oauth-proxy.ben900415.workers.dev',
-  DRIVE_FOLDER_NAME: 'CPC 憿澈蝺渡?',
+  OAUTH_REDIRECT_URI: 'https://cpc-quiz.chenijiajia.dpdns.org/web/',
+  DRIVE_FOLDER_NAME: 'CPC 題庫練習',
   BACKUP_FILENAME: 'cpc-quiz-progress.json'
 };
+
+
 
