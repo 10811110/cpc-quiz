@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """修正職安學科題庫 - 清理選項中的多餘空白"""
 import json
+from pathlib import Path
 import re
+import os
 
-JSON_PATH = "/home/ben900415/cpc-quiz/data/raw/chapter_zhian.json"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+JSON_PATH = str(PROJECT_ROOT / 'data/raw/chapter_zhian.json')
 
 def fix_spacing():
     with open(JSON_PATH, 'r', encoding='utf-8') as f:
@@ -20,8 +23,10 @@ def fix_spacing():
             q['options'][key] = re.sub(r'\s+', '', q['options'][key])
             fixed_count += 1
     
-    with open(JSON_PATH, 'w', encoding='utf-8') as f:
+    tmp = JSON_PATH + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, JSON_PATH)
     
     print(f"✅ 已修正 {fixed_count} 個欄位的空白問題")
     return data

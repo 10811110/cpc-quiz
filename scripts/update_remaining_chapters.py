@@ -55,8 +55,12 @@ for q in ch5_data['questions']:
         q['law'] = law
         q['tip'] = tip
 
-with open(f'{quiz_dir}data/raw/chapter5.json', 'w', encoding='utf-8') as f:
+with tmp = str(f'{quiz_dir}data/raw/chapter5.json') + '.tmp'
+with open(tmp, 'w', encoding='utf-8') as f:
     json.dump(ch5_data, f, ensure_ascii=False, indent=2)
+with os.replace(tmp, f'{quiz_dir}data/raw/chapter5.json')
+    json.dump(ch5_data, f, ensure_ascii=False, indent=2)
+
 
 # 統計第 5 章
 detailed = sum(1 for q in ch5_data['questions'] if len(q.get('analysis', '')) > 80 and '本題正確答案' not in q.get('analysis', ''))
@@ -98,8 +102,12 @@ for q in ch7_data['questions']:
     q['law'] = law
     q['tip'] = tip
 
-with open(f'{quiz_dir}data/raw/chapter7.json', 'w', encoding='utf-8') as f:
+with tmp = str(f'{quiz_dir}data/raw/chapter7.json') + '.tmp'
+with open(tmp, 'w', encoding='utf-8') as f:
     json.dump(ch7_data, f, ensure_ascii=False, indent=2)
+with os.replace(tmp, f'{quiz_dir}data/raw/chapter7.json')
+    json.dump(ch7_data, f, ensure_ascii=False, indent=2)
+
 
 detailed = sum(1 for q in ch7_data['questions'] if len(q.get('analysis', '')) > 80 and '本題正確答案' not in q.get('analysis', ''))
 print(f"✅ 第 7 章完成：{detailed}/{len(ch7_data['questions'])} 題 ({detailed/len(ch7_data['questions'])*100:.1f}%)")
@@ -147,8 +155,12 @@ for q in ch8_data['questions']:
     q['law'] = law
     q['tip'] = tip
 
-with open(f'{quiz_dir}data/raw/chapter8.json', 'w', encoding='utf-8') as f:
+with tmp = str(f'{quiz_dir}data/raw/chapter8.json') + '.tmp'
+with open(tmp, 'w', encoding='utf-8') as f:
     json.dump(ch8_data, f, ensure_ascii=False, indent=2)
+with os.replace(tmp, f'{quiz_dir}data/raw/chapter8.json')
+    json.dump(ch8_data, f, ensure_ascii=False, indent=2)
+
 
 detailed = sum(1 for q in ch8_data['questions'] if len(q.get('analysis', '')) > 80 and '本題正確答案' not in q.get('analysis', ''))
 print(f"✅ 第 8 章完成：{detailed}/{len(ch8_data['questions'])} 題 ({detailed/len(ch8_data['questions'])*100:.1f}%)")
@@ -200,8 +212,12 @@ for q in ch11_data['questions']:
     q['law'] = law
     q['tip'] = tip
 
-with open(f'{quiz_dir}data/raw/chapter11.json', 'w', encoding='utf-8') as f:
+with tmp = str(f'{quiz_dir}data/raw/chapter11.json') + '.tmp'
+with open(tmp, 'w', encoding='utf-8') as f:
     json.dump(ch11_data, f, ensure_ascii=False, indent=2)
+with os.replace(tmp, f'{quiz_dir}data/raw/chapter11.json')
+    json.dump(ch11_data, f, ensure_ascii=False, indent=2)
+
 
 detailed = sum(1 for q in ch11_data['questions'] if len(q.get('analysis', '')) > 80 and '本題正確答案' not in q.get('analysis', ''))
 print(f"✅ 第 11 章完成：{detailed}/{len(ch11_data['questions'])} 題 ({detailed/len(ch11_data['questions'])*100:.1f}%)")

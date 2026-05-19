@@ -7,14 +7,17 @@
   python3 generate_analysis_batch.py --chapter 1 --start 0 --batch_size 10
   python3 generate_analysis_batch.py --all
 """
-import json, re, argparse, subprocess, sys, os, time
+import json, re, argparse, sys, os, time
+from pathlib import Path
+import os
 
 OLLAMA_URL = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
 MODEL = 'kimi-k2.6:cloud'
-QUIZ_DIR = '/home/ben900415/cpc-quiz'
-INDEX_HTML = f'{QUIZ_DIR}/web/index.html'
-ORGANIC_JSON = f'{QUIZ_DIR}/data/raw/organic_solvent.json'
-LAWS_DIR = f'{QUIZ_DIR}/職安法_txt'
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+QUIZ_DIR = str(PROJECT_ROOT)
+INDEX_HTML = str(PROJECT_ROOT / 'web/index.html')
+ORGANIC_JSON = str(PROJECT_ROOT / 'data/raw/organic_solvent.json')
+LAWS_DIR = str(PROJECT_ROOT / '職安法_txt')
 
 def load_or_extract_json():
     """載入獨立JSON，若不存在則從web/index.html抽出"""
@@ -34,9 +37,10 @@ def load_or_extract_json():
 
 def save_json(data):
     """保存獨立JSON"""
-    with open(ORGANIC_JSON, 'w', encoding='utf-8') as f:
+    with tmp = ORGANIC_JSON + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
-
+    with os.replace(tmp, ORGANIC_JSON)
 def save_back_to_html(data):
     """將獨立JSON寫回 web/index.html"""
     with open(INDEX_HTML, 'r', encoding='utf-8') as f:
@@ -54,8 +58,10 @@ def save_back_to_html(data):
     suffix = time.strftime('%Y%m%d_%H%M%S')
     shutil.copy2(INDEX_HTML, f"{INDEX_HTML}.{suffix}.bak")
     
-    with open(INDEX_HTML, 'w', encoding='utf-8') as f:
+    with tmp = INDEX_HTML + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         f.write(new_html)
+    with os.replace(tmp, INDEX_HTML)
     print(f"已同步回寫 web/index.html，備份於 {INDEX_HTML}.{suffix}.bak")
 
 def read_laws():

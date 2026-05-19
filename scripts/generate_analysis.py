@@ -1,15 +1,18 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 批量生成有機溶劑題庫詳解
 用法: python3 generate_analysis.py --chapter 1 --start 0 --count 10
 """
-import json, re, argparse, subprocess, sys, os
+import json, re, argparse, sys, os, urllib.request
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 OLLAMA_URL = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
 MODEL = 'kimi-k2.6:cloud'
-INDEX_HTML = '/home/ben900415/cpc-quiz/web/index.html'
-LAWS_DIR = '/home/ben900415/cpc-quiz/職安法_txt'
+INDEX_HTML = str(PROJECT_ROOT / 'web' / 'index.html')
+LAWS_DIR = str(PROJECT_ROOT / '職安法_txt')
 
 def read_laws():
     """讀取所有法規文字，返回前 8000 字作為 context"""
@@ -40,8 +43,10 @@ def save_quiz_data(data, original_html):
     # 備份
     import shutil
     shutil.copy2(INDEX_HTML, INDEX_HTML + '.bak')
-    with open(INDEX_HTML, 'w', encoding='utf-8') as f:
+    tmp = INDEX_HTML + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         f.write(new_html)
+    os.replace(tmp, INDEX_HTML)
     print(f"已更新 {INDEX_HTML}，備份於 {INDEX_HTML}.bak")
 
 def call_model(prompt):
@@ -51,16 +56,21 @@ def call_model(prompt):
         "prompt": prompt,
         "stream": False,
         "options": {"temperature": 0.3}
-    })
-    result = subprocess.run(
-        ["curl", "-s", f"{OLLAMA_URL}/api/generate", "-d", payload],
-        capture_output=True, text=True, encoding='utf-8'
+    }).encode('utf-8')
+
+    req = urllib.request.Request(
+        f"{OLLAMA_URL}/api/generate",
+        data=payload,
+        headers={'Content-Type': 'application/json'},
+        method='POST'
     )
+
     try:
-        resp = json.loads(result.stdout)
-        return resp.get("response", "").strip()
-    except:
-        print(f"ERROR: {result.stdout[:200]}")
+        resp = urllib.request.urlopen(req, timeout=300)
+        data = json.loads(resp.read())
+        return data.get("response", "").strip()
+    except Exception as e:
+        print(f"ERROR: {e}")
         return ""
 
 def build_prompt(question, options, answer, law_context):
@@ -136,3 +146,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+

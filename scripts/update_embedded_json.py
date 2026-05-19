@@ -58,8 +58,10 @@ def main():
     html_content = re.sub(pattern2, replacement2, html_content, flags=re.DOTALL)
     
     # 寫回 web/index.html
-    with open('web/index.html', 'w', encoding='utf-8') as f:
+    tmp = str(work_dir / 'web/index.html') + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         f.write(html_content)
+    os.replace(tmp, work_dir / 'web/index.html')
     
     print("✓ 已更新 web/index.html 中的 quizData 和 quizData2")
     print(f"  一般業：{len(chapters_data)} 章")

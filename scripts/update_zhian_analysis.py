@@ -1,7 +1,11 @@
+from pathlib import Path
 import json
+import os
 
 # 讀取技術士題庫
-with open('/home/ben900415/cpc-quiz/data/raw/chapter_zhian.json', 'r', encoding='utf-8') as f:
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ch_file = str(PROJECT_ROOT / 'data/raw/chapter_zhian.json')
+with open(ch_file, 'r', encoding='utf-8') as f:
     chapter = json.load(f)
 
 # 100 題完整詳解
@@ -519,7 +523,8 @@ for q in chapter['questions']:
         updated_count += 1
 
 # 寫回檔案
-with open('/home/ben900415/cpc-quiz/data/raw/chapter_zhian.json', 'w', encoding='utf-8') as f:
+tmp = ch_file + '.tmp'
+with open(tmp, 'w', encoding='utf-8') as f:
     json.dump(chapter, f, ensure_ascii=False, indent=2)
 
 print(f"✅ 已完成 {updated_count}/100 題詳解更新")

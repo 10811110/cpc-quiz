@@ -1,7 +1,11 @@
+from pathlib import Path
 import json
+import os
 
 # 讀取原始技術士題庫
-with open('/home/ben900415/cpc-quiz/data/raw/chapter_zhian.json', 'r', encoding='utf-8') as f:
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+zhian_file = str(PROJECT_ROOT / 'data/raw/chapter_zhian.json')
+with open(zhian_file, 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 questions = data['questions']
@@ -27,9 +31,11 @@ for i in range(chapters):
     }
     
     # 寫入新檔案
-    output_path = f'/home/ben900415/cpc-quiz/chapter_zhian_{i+1}.json'
-    with open(output_path, 'w', encoding='utf-8') as f:
+    output_path = str(PROJECT_ROOT / f'chapter_zhian_{i+1}.json')
+    tmp = output_path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(chapter_data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, output_path)
     
     print(f'Chapter {i+1}: {start+1}-{end} (共{len(chapter_questions)}題) → {output_path}')
 

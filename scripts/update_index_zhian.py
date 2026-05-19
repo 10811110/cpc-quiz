@@ -1,7 +1,10 @@
+from pathlib import Path
 import json
 
 # 讀取 web/index.html
-with open('/home/ben900415/cpc-quiz/web/index.html', 'r', encoding='utf-8') as f:
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+index_file = str(PROJECT_ROOT / 'web/index.html')
+with open(index_file, 'r', encoding='utf-8') as f:
     content = f.read()
 
 # 1. 更新 SOURCE_NAMES - 技術士改為 5 章
@@ -104,13 +107,16 @@ content = content.replace(old_zhian_exam, new_zhian_exam)
 
 # 5. 刪除 quizData3 textarea (從第 810 行開始)
 import re
+import os
 textarea_pattern = r'\n<textarea id="quizData3" style="display:none">\{.*?\}</textarea>'
 content = re.sub(textarea_pattern, '', content, flags=re.DOTALL)
 
 # 寫回文件
-with open('/home/ben900415/cpc-quiz/web/index.html', 'w', encoding='utf-8') as f:
+tmp = index_file + '.tmp'
+with open(tmp, 'w', encoding='utf-8') as f:
     f.write(content)
 
+os.replace(tmp, index_file)
 print('✅ web/index.html 已更新完成')
 print('   - SOURCE_NAMES 已更新')
 print('   - selectMode 函式已更新 (技術士動態載入)')

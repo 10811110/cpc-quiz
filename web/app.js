@@ -320,7 +320,7 @@ function init() {
 
   } catch(e) {
 
-    document.getElementById('home').innerHTML='<p style="text-align:center;padding:40px;color:red">錯誤：'+e.message+'</p>';
+    document.getElementById('home').innerHTML='<p style="text-align:center;padding:40px;color:red">錯誤：'+escHtml(e.message)+'</p>';
 
   }
 
@@ -4330,4 +4330,11 @@ if (document.readyState === 'loading') {
 
   init();
 
+}
+
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(function(err) {
+    console.warn("SW registration failed:", err);
+  });
 }

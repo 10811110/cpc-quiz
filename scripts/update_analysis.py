@@ -24,14 +24,16 @@ def update_chapter_file(filepath):
         if 'tip' not in q:
             q['tip'] = ''
     
-    with open(filepath, 'w', encoding='utf-8') as f:
+    tmp = str(filepath) + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, filepath)
     
     return updated_count
 
 def main():
     # 工作目錄
-    work_dir = Path('/tmp/cpc-quiz-analysis')
+    work_dir = Path(__file__).resolve().parent.parent
     os.chdir(work_dir)
     
     # 更新所有 chapter*.json 檔案

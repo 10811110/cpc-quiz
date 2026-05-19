@@ -9,8 +9,8 @@ import os
 from pathlib import Path
 
 def main():
-    work_dir = Path('/tmp/cpc-quiz-analysis')
-    src_dir = Path('/home/ben900415/題庫練習網頁')
+    work_dir = Path(__file__).resolve().parent.parent
+    src_dir = Path(__file__).resolve().parent.parent
     
     # 讀取並更新甲業題庫
     with open(src_dir / 'data/raw/甲業總複習.json', 'r', encoding='utf-8') as f:
@@ -27,8 +27,10 @@ def main():
                 updated_count += 1
     
     # 寫入 data/raw/chapterA1.json 到工作目錄
-    with open(work_dir / 'data/raw/chapterA1.json', 'w', encoding='utf-8') as f:
+    tmp = str(work_dir / 'data/raw/chapterA1.json') + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(jia_data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, work_dir / 'data/raw/chapterA1.json')
     
     print(f"✓ 已更新甲業題庫 {updated_count} 題")
     
@@ -43,8 +45,10 @@ def main():
     html_content = re.sub(pattern2, replacement2, html_content, flags=re.DOTALL)
     
     # 寫回 web/index.html
-    with open(work_dir / 'web/index.html', 'w', encoding='utf-8') as f:
+    tmp = str(work_dir / 'web/index.html') + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         f.write(html_content)
+    os.replace(tmp, work_dir / 'web/index.html')
     
     print("✓ 已更新 web/index.html 中的 quizData2（甲業題庫）")
 

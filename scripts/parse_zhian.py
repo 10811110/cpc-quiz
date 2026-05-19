@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """解析職安學科 PDF 題庫 - 技術士技能檢定格式"""
 import pymupdf
+from pathlib import Path
 import re
 import json
+import os
 
-PDF_PATH = "/home/ben900415/.hermes/cache/documents/doc_4a26d16dfc6d_職安學科.pdf"
-OUTPUT_PATH = "/home/ben900415/cpc-quiz/data/raw/chapter_zhian.json"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PDF_PATH = str(PROJECT_ROOT / '.hermes/cache/documents/doc_4a26d16dfc6d_職安學科.pdf')
+OUTPUT_PATH = str(PROJECT_ROOT / 'data/raw/chapter_zhian.json')
 
 def parse_pdf():
     doc = pymupdf.open(PDF_PATH)
@@ -84,8 +87,10 @@ def parse_pdf():
         'questions': questions
     }
     
-    with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
+    tmp = OUTPUT_PATH + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, OUTPUT_PATH)
     
     print(f"✅ 已解析 {len(questions)} 題")
     print(f"📁 輸出至：{OUTPUT_PATH}")

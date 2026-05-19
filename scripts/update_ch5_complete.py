@@ -55,8 +55,12 @@ for q in ch5_data['questions']:
         q['law'] = law
         q['tip'] = tip
 
-with open(f'{quiz_dir}data/raw/chapter5.json', 'w', encoding='utf-8') as f:
+with tmp = str(f'{quiz_dir}data/raw/chapter5.json') + '.tmp'
+with open(tmp, 'w', encoding='utf-8') as f:
     json.dump(ch5_data, f, ensure_ascii=False, indent=2)
+with os.replace(tmp, f'{quiz_dir}data/raw/chapter5.json')
+    json.dump(ch5_data, f, ensure_ascii=False, indent=2)
+
 
 detailed = sum(1 for q in ch5_data['questions'] if len(q.get('analysis', '')) > 80 and '本題正確答案' not in q.get('analysis', ''))
 print(f"✅ 第 5 章完成：{detailed}/{len(ch5_data['questions'])} 題 ({detailed/len(ch5_data['questions'])*100:.1f}%)")

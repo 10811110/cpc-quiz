@@ -22,8 +22,10 @@ def update_chapter_complete(ch_num, get_explanation):
         q['law'] = law
         q['tip'] = tip
     
-    with open(ch_file, 'w', encoding='utf-8') as f:
+    tmp = ch_file + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(ch, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, ch_file)
     
     detailed = sum(1 for q in ch['questions'] if len(q.get('analysis', '')) > 80 and '本題正確答案' not in q.get('analysis', '') and '故選' not in q.get('analysis', ''))
     return detailed, len(ch['questions'])

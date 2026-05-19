@@ -1,25 +1,25 @@
-ï»¿const { chromium } = require("playwright");
+const { chromium } = require("playwright");
 const fs = require("fs");
 const path = require("path");
 
-// é…ç½®
-const BASE_URL = process.env.BASE_URL || "https://cpc-quiz.chenijiajia.dpdns.org/";
+// °t¸m
+const BASE_URL = process.env.BASE_URL || "http://localhost:8080/";
 const SCREENSHOT_DIR = path.join(__dirname, "screenshots");
 
-// ç¡®ä¿æˆªå›¾ç›®å½•å­˜åœ¨
+// ÚÌ«OºI?¥Ø?¦s¦b
 if (!fs.existsSync(SCREENSHOT_DIR)) {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 }
 
-// è¾…åŠ©å‡½æ•°ï¼šæˆªå›¾å¹¶ä¿å­˜
+// ?§U¨ç?¡GºI?¦}«O¦s
 async function screenshot(page, name) {
   const filePath = path.join(SCREENSHOT_DIR, `${name}.png`);
   await page.screenshot({ path: filePath, fullPage: false });
-  console.log(`ðŸ“¸ æˆªå›¾: ${name}.png`);
+  console.log(`?? ºI?: ${name}.png`);
   return filePath;
 }
 
-// è¾…åŠ©å‡½æ•°ï¼šæ”¶é›† console é”™è¯¯
+// ?§U¨ç?¡G¦¬¶° console ??
 function collectErrors(page) {
   const errors = [];
   page.on("console", msg => {
@@ -31,9 +31,9 @@ function collectErrors(page) {
   return errors;
 }
 
-// æµ‹è¯•å¥—ä»¶
+// ??®M¥ó
 async function runTests() {
-  console.log(`ðŸ§ª å¼€å§‹æµ‹è¯•: ${BASE_URL}`);
+  console.log(`?? ?©l??: ${BASE_URL}`);
   
   const browser = await chromium.launch();
   const page = await browser.newPage({
@@ -44,7 +44,7 @@ async function runTests() {
   let passCount = 0;
   let failCount = 0;
   
-  // ===== æµ‹è¯• 1: é¦–é¡µåŠ è½½ =====
+  // ===== ?? 1: ­º?¥[? =====
   try {
     await page.goto(BASE_URL);
     await page.waitForTimeout(1500);
@@ -52,53 +52,53 @@ async function runTests() {
     
     const hasCards = await page.evaluate(() => document.querySelectorAll(".mode-card").length > 0);
     if (hasCards) {
-      console.log("âœ… æµ‹è¯• 1: é¦–é¡µåŠ è½½æˆåŠŸ");
+      console.log("? ?? 1: ­º?¥[?¦¨¥\");
       passCount++;
     } else {
-      throw new Error("é¦–é¡µæ²¡æœ‰æ˜¾ç¤ºé¢˜åº“å¡ç‰‡");
+      throw new Error("­º??¦³?¥Ü??¥d¤ù");
     }
   } catch (err) {
-    console.log("âŒ æµ‹è¯• 1 å¤±è´¥:", err.message);
+    console.log("? ?? 1 ¥¢?:", err.message);
     failCount++;
   }
   
-  // ===== æµ‹è¯• 2: è¿›å…¥ä¸€èˆ¬ä¸šé¢˜åº“ =====
+  // ===== ?? 2: ?¤J¤@¯ë??? =====
   try {
     await page.click(".mode-card:nth-child(1)");
     await page.waitForTimeout(1000);
     await screenshot(page, "02-mode-select");
     
-    const hasPractice = await page.evaluate(() => document.body.innerHTML.includes("ç·´ç¿’æ¨¡å¼"));
+    const hasPractice = await page.evaluate(() => document.body.innerHTML.includes("½m²ß¼Ò¦¡"));
     if (hasPractice) {
-      console.log("âœ… æµ‹è¯• 2: è¿›å…¥ä¸€èˆ¬ä¸šé¢˜åº“æˆåŠŸ");
+      console.log("? ?? 2: ?¤J¤@¯ë???¦¨¥\");
       passCount++;
     } else {
-      throw new Error("æ²¡æœ‰æ˜¾ç¤ºç»ƒä¹ æ¨¡å¼æŒ‰é’®");
+      throw new Error("?¦³?¥Ü??¼Ò¦¡«ö?");
     }
   } catch (err) {
-    console.log("âŒ æµ‹è¯• 2 å¤±è´¥:", err.message);
+    console.log("? ?? 2 ¥¢?:", err.message);
     failCount++;
   }
   
-  // ===== æµ‹è¯• 3: é€‰æ‹©ç»ƒä¹ æ¨¡å¼ =====
+  // ===== ?? 3: ????¼Ò¦¡ =====
   try {
-    await page.click("text=ç·´ç¿’æ¨¡å¼");
+    await page.click("text=½m²ß¼Ò¦¡");
     await page.waitForTimeout(1500);
     await screenshot(page, "03-chapter-list");
     
     const hasChapters = await page.evaluate(() => document.querySelectorAll(".chapter-card").length > 0);
     if (hasChapters) {
-      console.log("âœ… æµ‹è¯• 3: ç« èŠ‚åˆ—è¡¨æ˜¾ç¤ºæˆåŠŸ");
+      console.log("? ?? 3: ³¹?¦Cªí?¥Ü¦¨¥\");
       passCount++;
     } else {
-      throw new Error("æ²¡æœ‰æ˜¾ç¤ºç« èŠ‚åˆ—è¡¨");
+      throw new Error("?¦³?¥Ü³¹?¦Cªí");
     }
   } catch (err) {
-    console.log("âŒ æµ‹è¯• 3 å¤±è´¥:", err.message);
+    console.log("? ?? 3 ¥¢?:", err.message);
     failCount++;
   }
   
-  // ===== æµ‹è¯• 4: ç‚¹å‡»ç¬¬ 1 ç« å¹¶æ˜¾ç¤ºé¢˜ç›® =====
+  // ===== ?? 4: ??²Ä 1 ³¹¦}?¥Ü?¥Ø =====
   try {
     await page.click(".chapter-card:nth-of-type(1)");
     await page.waitForTimeout(2000);
@@ -106,57 +106,57 @@ async function runTests() {
     
     const hasQuestion = await page.evaluate(() => document.querySelector(".question-text") !== null);
     if (hasQuestion) {
-      console.log("âœ… æµ‹è¯• 4: é¢˜ç›®åŠ è½½æˆåŠŸ");
+      console.log("? ?? 4: ?¥Ø¥[?¦¨¥\");
       passCount++;
     } else {
-      throw new Error("æ²¡æœ‰æ˜¾ç¤ºé¢˜ç›®");
+      throw new Error("?¦³?¥Ü?¥Ø");
     }
   } catch (err) {
-    console.log("âŒ æµ‹è¯• 4 å¤±è´¥:", err.message);
+    console.log("? ?? 4 ¥¢?:", err.message);
     failCount++;
   }
   
-  // ===== æµ‹è¯• 5: ç‚¹å‡»ç­”æ¡ˆ A =====
+  // ===== ?? 5: ??µª®× A =====
   try {
     await page.click(".option-btn:nth-of-type(1)");
     await page.waitForTimeout(500);
     await screenshot(page, "05-answered");
     
-    // æ£€æŸ¥æ˜¯å¦æœ‰é«˜äº®æˆ–è§£æž
+    // ?¬d¬O§_¦³°ª«G©Î¸ÑªR
     const hasHighlight = await page.evaluate(() => {
       return document.querySelector(".option-btn.correct") !== null || 
              document.querySelector(".option-btn.wrong") !== null;
     });
     if (hasHighlight) {
-      console.log("âœ… æµ‹è¯• 5: ç­”é¢˜åé¦ˆæ˜¾ç¤ºæˆåŠŸ");
+      console.log("? ?? 5: µª?¤Ï??¥Ü¦¨¥\");
       passCount++;
     } else {
-      throw new Error("æ²¡æœ‰æ˜¾ç¤ºç­”é¢˜åé¦ˆ");
+      throw new Error("?¦³?¥Üµª?¤Ï?");
     }
   } catch (err) {
-    console.log("âŒ æµ‹è¯• 5 å¤±è´¥:", err.message);
+    console.log("? ?? 5 ¥¢?:", err.message);
     failCount++;
   }
   
-  // ===== æµ‹è¯• 6: è§£æžåŒºå— =====
+  // ===== ?? 6: ¸ÑªR?? =====
   try {
     await page.waitForTimeout(1000);
     await screenshot(page, "06-analysis");
     
     const hasAnalysis = await page.evaluate(() => document.querySelector(".analysis-block") !== null);
     if (hasAnalysis) {
-      console.log("âœ… æµ‹è¯• 6: è§£æžåŒºå—æ˜¾ç¤ºæˆåŠŸ");
+      console.log("? ?? 6: ¸ÑªR???¥Ü¦¨¥\");
       passCount++;
     } else {
-      console.log("âš ï¸ æµ‹è¯• 6: æ²¡æœ‰è§£æžåŒºå—ï¼ˆå¯èƒ½æ˜¯ç­”å¯¹äº†ï¼Œæ²¡æœ‰è§£æžï¼‰");
+      console.log("?? ?? 6: ?¦³¸ÑªR??¡]¥i¯à¬Oµª?¤F¡A?¦³¸ÑªR¡^");
       passCount++;
     }
   } catch (err) {
-    console.log("âŒ æµ‹è¯• 6 å¤±è´¥:", err.message);
+    console.log("? ?? 6 ¥¢?:", err.message);
     failCount++;
   }
   
-  // ===== æµ‹è¯• 7: æ·±è‰²æ¨¡å¼åˆ‡æ¢ =====
+  // ===== ?? 7: ²`¦â¼Ò¦¡¤Á? =====
   try {
     const beforeDark = await page.evaluate(() => document.body.classList.contains("dark"));
     await page.click("#themeToggle");
@@ -165,36 +165,36 @@ async function runTests() {
     
     const afterDark = await page.evaluate(() => document.body.classList.contains("dark"));
     if (afterDark !== beforeDark) {
-      console.log("âœ… æµ‹è¯• 7: æ·±è‰²æ¨¡å¼åˆ‡æ¢æˆåŠŸ");
+      console.log("? ?? 7: ²`¦â¼Ò¦¡¤Á?¦¨¥\");
       passCount++;
     } else {
-      throw new Error("æ·±è‰²æ¨¡å¼åˆ‡æ¢å¤±è´¥");
+      throw new Error("²`¦â¼Ò¦¡¤Á?¥¢?");
     }
   } catch (err) {
-    console.log("âŒ æµ‹è¯• 7 å¤±è´¥:", err.message);
+    console.log("? ?? 7 ¥¢?:", err.message);
     failCount++;
   }
   
-  // ===== æµ‹è¯•ç»“æžœæ±‡æ€» =====
+  // ===== ???ªG?? =====
   console.log("\n" + "=".repeat(50));
-  console.log(`ðŸŽ‰ æµ‹è¯•å®Œæˆ: ${passCount} é€šè¿‡, ${failCount} å¤±è´¥`);
+  console.log(`?? ??§¹¦¨: ${passCount} ³q?, ${failCount} ¥¢?`);
   if (errors.length > 0) {
-    console.log(`âš ï¸ Console é”™è¯¯ (${errors.length} æ¡):`);
+    console.log(`?? Console ?? (${errors.length} ?):`);
     errors.forEach(e => console.log("  - " + e.substring(0, 120)));
   } else {
-    console.log("âœ… æ²¡æœ‰ Console é”™è¯¯");
+    console.log("? ?¦³ Console ??");
   }
   console.log("=".repeat(50));
   
   await browser.close();
   
-  // å¦‚æžœæœ‰å¤±è´¥ï¼Œè¿”å›žéžé›¶é€€å‡ºç 
+  // ¦pªG¦³¥¢?¡Aªð¦^«D¹s°h¥X?
   if (failCount > 0) {
     process.exit(1);
   }
 }
 
 runTests().catch(err => {
-  console.error("æµ‹è¯•æ‰§è¡Œé”™è¯¯:", err);
+  console.error("???¦æ??:", err);
   process.exit(1);
 });

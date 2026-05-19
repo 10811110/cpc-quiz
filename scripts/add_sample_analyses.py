@@ -5,10 +5,13 @@
 """
 
 import json
+from pathlib import Path
 
 def add_sample_analyses():
     # 更新 data/raw/chapter1.json 的前 3 題作為範例
-    with open('/tmp/cpc-quiz-analysis/data/raw/chapter1.json', 'r', encoding='utf-8') as f:
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ch1_file = str(PROJECT_ROOT / 'data/raw/chapter1.json')
+with open(ch1_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
     # 第 1 題範例
@@ -26,8 +29,11 @@ def add_sample_analyses():
     data['questions'][2]['law'] = '溝通理論 - 雙向溝通模型'
     data['questions'][2]['tip'] = '題目問「不屬於」→ 找負面選項，「主觀」是溝通障礙'
     
-    with open('/tmp/cpc-quiz-analysis/data/raw/chapter1.json', 'w', encoding='utf-8') as f:
+    tmp = ch1_file + '.tmp'
+with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+    os.replace(tmp, ch1_file)
     
     print("✓ 已更新 data/raw/chapter1.json 前 3 題作為範例")
     print("  包含解析、法規出處、答題技巧")
