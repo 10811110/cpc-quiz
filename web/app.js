@@ -3043,7 +3043,7 @@ function proceedMode() {
 
         );
       }
-
+   }
 
 
     Promise.all(loadPromises).then(function(results) {
@@ -3328,7 +3328,7 @@ function renderQuestion() {
   var showAnswer = (STATE.mode === 'practice' || STATE.mode === 'mistake') && answered !== undefined;
 
   
-  var correctAnswer = q.answer;
+  var correctAnswer = normalizeAnswerValue(q.answer);
   
 
   opts.forEach(function(o) {
@@ -3378,15 +3378,6 @@ function selectOption(opt) {
   // 答案比對：防禦性正規化數字答案（1/2/3/4 → A/B/C/D）
   var isCorrect = (opt === normalizeAnswerValue(q.answer));
 
-  var isCorrect = false;
-
-  if (q.answer === 'A' || q.answer === 'B' || q.answer === 'C' || q.answer === 'D') {
-
-    // 一般業：直接比對字母
-
-    isCorrect = (opt === q.answer);
-
-  }
 
   // 記錄答錯的題目到錯題本
 
