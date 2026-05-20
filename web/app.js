@@ -81,7 +81,7 @@ function escHtml(s) {
 
   if (!s) return '';
 
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(//g,'&#96;');
 
 }
 
@@ -3005,9 +3005,11 @@ function proceedMode() {
 
     // 一般業和甲業
 
-    var files = src === 'luo' 
+    var files = src === 'luo'
 
       ? CHAPTERS // 一般業用 chapters.json
+
+      : src === 'organic' ? window.ORGANIC_DATA // 有機溶劑用內嵌
 
       : window.JIA_DATA; // 甲業用內嵌
 
@@ -3021,23 +3023,26 @@ function proceedMode() {
 
      var ch = files[k];
 
-     if (ch.file) {
+      if (ch.questions) {
 
-       loadPromises.push (
+        // 內嵌資料（甲業、有機溶劑）
+        var qs = ch.questions.slice();
+        qs.forEach(function(q) { q._ch = k; });
+        loadPromises.push(Promise.resolve(qs));
+      } else if (ch.file) {
 
-          loadChapterQuestions('../data/raw/' + ch.file).then(function(qs) {
+        loadPromises.push(
 
-           qs.forEach(function(q) { q._ch = k; });
+           loadChapterQuestions('../data/raw/' + ch.file).then(function(qs) {
 
-           return qs;
+            qs.forEach(function(q) { q._ch = k; });
 
-         })
+            return qs;
 
-       );
+          })
 
-     }
-
-   }
+        );
+      }
 
 
 
