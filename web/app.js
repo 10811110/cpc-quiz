@@ -257,6 +257,14 @@ function normalizeQuestions(questions) {
   return questions;
 }
 
+// 防禦性正規化單一答案值
+function normalizeAnswerValue(ans) {
+  var map = {
+    "1":"A","2":"B","3":"C","4":"D"
+  };
+  return map[ans] || ans;
+}
+
 function loadChapterQuestions(filename) {
   return fetch(filename).then(r => r.json()).then(function(d) {
     return normalizeQuestions(d.questions || []);
@@ -960,170 +968,6 @@ function showProgress() {
 
 
 
-function renderChapterList() {
-
-  var html = '';
-
-  var src = CURRENT_SOURCE;
-
-  var data = null;
-
-  var sourceName = '';
-
-
-
-  // 根據題庫來源取得對應資料
-
-  if (src === 'luo') {
-
-    data = CHAPTERS;
-
-    sourceName = '📘 一般業題庫';
-
-  } else if (src === 'jia') {
-
-    data = window.JIA_DATA;
-
-    sourceName = '📗 甲業題庫';
-
-  } else if (src === 'zhian') {
-
-    data = window.ZHIAN_DATA;
-
-    sourceName = '📙 技術士題庫';
-
-  } else if (src === 'organic') {
-
-    data = window.ORGANIC_DATA;
-
-    sourceName = '🧪 有機溶劑題庫';
-
-  }
-
-
-
-  // 若資料未載入，顯示錯誤
-
-  if (!data) {
-
-    html = '<p style="text-align:center;padding:40px;color:red">載入失敗：找不到 ' + sourceName + ' 的資料</p>';
-
-    document.getElementById('chapter-list').innerHTML = html;
-
-    return;
-
-  }
-
-
-
-  // 取得所有章節 ID 並排序
-
-  var keys = Object.keys(data);
-
-
-
-  // 特殊處理：甲業為 A1~A20，需按數字部分排序
-
-  if (src === 'jia') {
-
-    keys.sort(function(a, b) {
-
-      var aNum = parseInt(a.replace('A', ''));
-
-      var bNum = parseInt(b.replace('A', ''));
-
-      return aNum - bNum;
-
-    });
-
-  } else {
-
-    // 其他題庫：依 id 數值排序
-
-    keys.sort(function(a, b) {
-
-      return parseInt(a) - parseInt(b);
-
-    });
-
-  }
-
-
-
-  // 產生每張章節卡片
-
-  keys.forEach(function(id) {
-
-    var ch = data[id];
-
-    var prog = PROGRESS[src] && PROGRESS[src][id] ? PROGRESS[src][id] : { answered: 0, total: ch.total_questions };
-
-    var isDone = prog.answered >= prog.total && prog.total > 0;
-
-    var percent = prog.total > 0 ? Math.round(prog.answered / prog.total * 100) : 0;
-
-
-
-    // 章節標題顯示處理
-
-    var chNumDisplay = '';
-
-    if (src === 'jia') {
-
-      // 甲業：顯示 A1, A2, ...
-
-      chNumDisplay = id;
-
-    } else if (src === 'zhian') {
-
-      // 技術士：顯示 數字編號
-
-      chNumDisplay = id;
-
-    } else {
-
-      // 一般業、有機溶劑：顯示數字編號
-
-      chNumDisplay = id;
-
-    }
-
-
-
-    html += '<div class="chapter-card' + (isDone ? ' completed' : '') +
-
-              '" onclick="selectChannel(\'' + id + '\')">' +
-
-            '<div class="ch-card-num">' + chNumDisplay +
-
-              (isDone ? '<span class="completed-badge"> ✅</span>' : '') +
-
-            '</div>' +
-
-            '<div class="ch-card-title">' + escHtml(ch.chapter) + '</div>' +
-
-            '<div class="ch-card-q">' + ch.total_questions + ' 題' +
-
-              (isDone ? '<br>已完成' : '') +
-
-            '</div>' +
-
-          '</div>';
-
-  });
-
-
-
-  // 若無章節資料
-
-  if (keys.length === 0) {
-
-    html = '<p style="text-align:center;padding:40px;color:#7f8c8d">此題庫目前無章節資料</p>';
-
-  }
-
-
-
   // 更新章節列表容器
 
   document.getElementById('chapter-list').innerHTML = html;
@@ -1307,6 +1151,12 @@ function shareProgress() {
 
   var url = window.location.origin + window.location.pathname + '#progress=' + compressed;
 
+  // 檢查 URL 長度，避免超出瀏覽器限制
+  if (url.length > 2000) {
+    alert("進度資料過多，無法透過連結分享。\n請改用「匯出」功能下載進度檔案，再傳送給另一台裝置匯入。");
+    return;
+  }
+
   // 複製到剪貼簿
 
   navigator.clipboard.writeText(url).then(function() {
@@ -1468,7 +1318,10 @@ function isTokenExpiringSoon() {
 
   var expiry = new Date(googleTokenExpiry);
 
-  return new Date() >= new Date(expiry.getTime() - 10 * 60 * 1000);
+  var now = new Date();
+  var timeUntilExpiry = expiry.getTime() - now.getTime();
+  // 只在「5~10 分鐘內過期」才算即將過期，與 isTokenExpired（<5 分鐘）不重叠
+  return timeUntilExpiry <= 10 * 60 * 1000 && timeUntilExpiry > 5 * 60 * 1000;
 
 }
 
@@ -3517,7 +3370,8 @@ function selectOption(opt) {
 
   
 
-  // 答案比對：一般業答案是字母（A/B/C/D），甲業答案是數字（1/2/3/4）
+  // 答案比對：防禦性正規化數字答案（1/2/3/4 → A/B/C/D）
+  var isCorrect = (opt === normalizeAnswerValue(q.answer));
 
   var isCorrect = false;
 
@@ -3709,7 +3563,7 @@ function showResult() {
 
   STATE.questions.forEach(function(q, i) {
 
-    if (STATE.answers[i] === q.answer) correct++;
+    if (STATE.answers[i] === normalizeAnswerValue(q.answer)) correct++;
 
   });
 
@@ -3907,7 +3761,7 @@ function renderWrongReview() {
 
     var answered = STATE.answers[i];
 
-    var isCorrect = (answered === q.answer);
+    var isCorrect = (answered === normalizeAnswerValue(q.answer));
 
     if (!isCorrect) {
 
