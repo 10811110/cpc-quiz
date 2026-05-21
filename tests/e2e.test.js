@@ -3,6 +3,9 @@ const fs = require("fs");
 const path = require("path");
 
 // 設定
+// 預設測試本機開發環境。若要測試生產環境，請在執行前設定環境變數：
+//   $env:BASE_URL = "https://cpc-5r7.pages.dev/web/"
+//   node tests/e2e.test.js
 const BASE_URL = process.env.BASE_URL || "http://localhost:8080/";
 const SCREENSHOT_DIR = path.join(__dirname, "screenshots");
 

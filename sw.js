@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'cpc-quiz-v1';
+﻿const CACHE_NAME = 'cpc-quiz-v2';
 const STATIC_ASSETS = [
   '/web/',
   '/web/index.html',
