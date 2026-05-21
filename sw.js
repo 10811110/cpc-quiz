@@ -1,10 +1,10 @@
 ﻿const CACHE_NAME = 'cpc-quiz-v2';
 const STATIC_ASSETS = [
   '/web/',
-  '/web/index.html',
-  '/web/style.css',
-  '/web/config.js',
-  '/web/app.js'
+  '/web/index.html?v=2',
+  '/web/style.css?v=2',
+  '/web/config.js?v=2',
+  '/web/app.js?v=2'
 ];
 
 self.addEventListener('install', event => {
