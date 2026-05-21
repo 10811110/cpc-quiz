@@ -3629,7 +3629,7 @@ function showResult() {
 
         STATE.questions.forEach(function(q, i) {
 
-          if (STATE.answers[i] === q.answer) {
+          if (STATE.answers[i] === normalizeAnswerValue(q.answer)) {
 
             var key = q._ch + '_' + q.id;
 
@@ -3778,7 +3778,7 @@ function renderWrongReview() {
     var q = item.q;
 
     var opts = ['A','B','C','D'];
-    var correctLetter = q.answer;
+    var correctLetter = normalizeAnswerValue(q.answer);
     var correctText = escHtml(opts.indexOf(correctLetter) >= 0 ? q.options[correctLetter] : 'N/A');
 
     var userLetter = item.answered || '未作答';
