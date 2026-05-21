@@ -968,26 +968,6 @@ function showProgress() {
 
 
 
-  // 更新章節列表容器
-
-  document.getElementById('chapter-list').innerHTML = html;
-
-
-
-  // 切換畫面
-
-  goScreen('chapter-select');
-
-
-
-  // 更新橫幅文字
-
-  document.querySelector('.banner p').textContent = sourceName;
-
-}
-
-
-
 function toggleProgressSection(source) {
 
   var details = document.getElementById(source + '-details');
