@@ -58,10 +58,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Microsoft Jheng
 /* Quiz */
 .question-counter{text-align:center;font-size:.88rem;color:#7f8c8d;margin-bottom:16px;font-weight:500}
 .quiz-card{background:white;border-radius:18px;padding:28px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 8px 20px rgba(0,0,0,.04)}
-.question-text{font-size:1.08rem;font-weight:600;color:#2c3e50;line-height:1.65;margin-bottom:24px;padding-bottom:16px;border-bottom:1.5px solid #f0f3f7}
+.question-text{font-size:1.15rem;font-weight:600;color:#2c3e50;line-height:1.75;margin-bottom:24px;padding-bottom:16px;border-bottom:1.5px solid #f0f3f7}
 
 /* Options */
-.option-btn{width:100%;padding:15px 20px;border:2px solid #eef2f7;border-radius:14px;background:white;text-align:left;font-size:.95rem;cursor:pointer;transition:all .18s;margin-bottom:12px;color:#2c3e50;font-weight:500;display:flex;align-items:center;gap:10px}
+.option-btn{width:100%;padding:16px 20px;border:2px solid #eef2f7;border-radius:14px;background:white;text-align:left;font-size:1rem;cursor:pointer;transition:all .18s;margin-bottom:14px;color:#2c3e50;font-weight:500;display:flex;align-items:center;gap:10px}
 .option-btn:hover{border-color:#e74c3c;background:linear-gradient(135deg,#fffafa 0%,#fff5f5 100%);transform:translateX(3px)}
 .option-btn.correct{border-color:#27ae60;background:linear-gradient(135deg,#f0fdf4 0%,#eafaf1 100%);color:#27ae60;font-weight:700}
 .option-btn.wrong{border-color:#e74c3c;background:linear-gradient(135deg,#fffafa 0%,#fdf2f1 100%);color:#e74c3c}
@@ -119,3 +119,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Microsoft Jheng
 ::-webkit-scrollbar-thumb:hover{background:#94a3b8}
 .dark ::-webkit-scrollbar-thumb{background:#475569}
 .dark ::-webkit-scrollbar-thumb:hover{background:#64748b}
+
+/* Focus mode - reduces distractions during quiz */
+.quiz-focus .banner{display:none}
+.quiz-focus .home-btn{display:none}
+.quiz-focus #keyboard-hint{display:none}
+.quiz-focus .progress-bar{display:none}
+.quiz-focus .container{padding-top:24px}
+.quiz-focus .quiz-card{max-width:720px;margin:0 auto;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.02);border:1px solid #e2e8f0}
+.quiz-focus .question-text{font-size:1.25rem;line-height:1.85;padding-bottom:24px;margin-bottom:28px}
+.quiz-focus .option-btn{margin-bottom:16px;padding:18px 22px;font-size:1.05rem}
+.quiz-focus .question-counter{margin-top:8px;font-size:.9rem;color:#94a3b8}
+
+/* Calm theme - reduces anxiety with cool desaturated colors */
+.calm .banner{background:linear-gradient(135deg,#475569 0%,#334155 50%,#1e293b 100%);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.calm .nav-btn.primary{background:linear-gradient(135deg,#0d9488,#0f766e)}
+.calm .nav-btn.primary:hover{background:linear-gradient(135deg,#0f766e,#115e59);box-shadow:0 4px 12px rgba(13,148,136,.2)}
+.calm .progress-fill{background:linear-gradient(90deg,#0d9488,#0f766e);box-shadow:0 0 8px rgba(13,148,136,.15)}
+.calm .option-btn:hover{border-color:#0d9488;background:linear-gradient(135deg,#f0fdfa 0%,#ecfeff 100%)}
+.calm .option-btn:hover .opt-letter{background:#ecfeff;color:#0d9488;border-color:#a5f3fc}
+.calm .chapter-card:hover{border-color:#0d9488;box-shadow:0 8px 24px rgba(13,148,136,.12)}
+.calm .chapter-card::before{background:linear-gradient(180deg,#0d9488,#0f766e)}
+.calm .mode-card:hover::after{background:linear-gradient(90deg,#0d9488,#0f766e);opacity:1}
+.calm .mode-card .icon-wrap{background:linear-gradient(135deg,#f0fdfa 0%,#ecfeff 100%);box-shadow:0 2px 8px rgba(13,148,136,.08)}
+.calm .ch-card-num{color:#0d9488}
+
+/* Dark + calm */
+.dark.calm .banner{background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 50%,#1e293b 100%)}
+.dark.calm .nav-btn.primary{background:linear-gradient(135deg,#14b8a6,#0d9488)}
+.dark.calm .nav-btn.primary:hover{background:linear-gradient(135deg,#0d9488,#0f766e)}
+.dark.calm .progress-fill{background:linear-gradient(90deg,#14b8a6,#0d9488);box-shadow:0 0 8px rgba(20,184,166,.15)}
+.dark.calm .option-btn:hover{border-color:#14b8a8;background:linear-gradient(135deg,#134e4a 0%,#1e293b 100%)}
+.dark.calm .option-btn:hover .opt-letter{background:#134e4a;color:#5eead4;border-color:#2dd4bf}
+.dark.calm .mode-card .icon-wrap{background:linear-gradient(135deg,#134e4a 0%,#1e293b 100%);box-shadow:0 2px 8px rgba(0,0,0,.2)}

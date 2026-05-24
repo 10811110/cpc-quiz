@@ -41,7 +41,7 @@ var EXAM_HISTORY = loadStorage('examHistory', {});
 
 var MISTAKE_BOOK = loadStorage('mistakeBook', {});
 
-var SETTINGS = loadStorage('settings', {"autoNext":false,"autoBackup":false,"autoBackupInterval":30});
+var SETTINGS = loadStorage('settings', {"autoNext":false,"autoBackup":false,"autoBackupInterval":30,"focusMode":false,"calmTheme":false});
 
 var PROGRESS = loadStorage('progress', {});
 
@@ -322,6 +322,10 @@ function init() {
 
     }
 
+    if (SETTINGS.calmTheme) {
+      document.body.classList.add('calm');
+    }
+
     updateMistakeCount();
 
     renderHome();
@@ -388,7 +392,11 @@ function toggleSettings() {
 
     document.getElementById('autoBackupToggle').checked = SETTINGS.autoBackup || false;
 
-    updateAutoBackupToggleStyle(SETTINGS.autoBackup || false);
+    updateAutoBackupToggleStyle(SETTINGS.autoBackup || false);\r\n    
+    document.getElementById('focusToggle').checked = SETTINGS.focusMode || false;
+    updateFocusToggleStyle(SETTINGS.focusMode || false);
+    document.getElementById('calmToggle').checked = SETTINGS.calmTheme || false;
+    updateCalmToggleStyle(SETTINGS.calmTheme || false);
 
     
 
@@ -432,6 +440,34 @@ function updateAutoBackupToggleStyle(isOn) {
 
 
 
+
+function updateFocusToggleStyle(isOn) {
+  document.getElementById('focusSwitch').style.background = isOn ? '#27ae60' : '#ccc';
+  document.getElementById('focusDot').style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+}
+
+function updateCalmToggleStyle(isOn) {
+  document.getElementById('calmSwitch').style.background = isOn ? '#27ae60' : '#ccc';
+  document.getElementById('calmDot').style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+}
+
+function toggleFocusMode() {
+  SETTINGS.focusMode = !SETTINGS.focusMode;
+  saveSettings();
+  updateFocusToggleStyle(SETTINGS.focusMode);
+  // Apply immediately if on quiz screen
+  var isQuiz = document.getElementById('quiz-screen').classList.contains('active');
+  if (isQuiz) {
+    document.body.classList.toggle('quiz-focus', SETTINGS.focusMode);
+  }
+}
+
+function toggleCalmTheme() {
+  var isCalm = document.body.classList.toggle('calm');
+  SETTINGS.calmTheme = isCalm;
+  saveSettings();
+  updateCalmToggleStyle(isCalm);
+}
 // 自動備份功能
 
 var autoBackupInterval = null;
@@ -2736,6 +2772,15 @@ function goScreen(id) {
   document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
 
   document.getElementById(id).classList.add('active');
+
+  // Focus mode: hide distractions only on quiz screen
+  if (id === 'quiz-screen') {
+    if (SETTINGS.focusMode) {
+      document.body.classList.add('quiz-focus');
+    }
+  } else {
+    document.body.classList.remove('quiz-focus');
+  }
 
 }
 
