@@ -71,6 +71,11 @@ var SOURCE_NAMES = {"luo":"一般業題庫 · " + APP_CONFIG.TOTAL_QUESTIONS.luo
 
 var STATE = {screen:'home',mode:null,chId:null,questions:[],current:0,answers:[],done:false};
 
+// Quiz timer & streak tracking
+var QUIZ_TIMER = {startTime:null,interval:null,elapsed:0};
+var CURRENT_STREAK = 0;
+var MAX_STREAK = 0;
+
   CURRENT_SOURCE = null;
 
 
@@ -2779,14 +2784,90 @@ function goScreen(id) {
     if (SETTINGS.focusMode) {
       document.body.classList.add('quiz-focus');
     }
+    startQuizTimer();
   } else {
     document.body.classList.remove('quiz-focus');
+    stopQuizTimer();
   }
 
 }
 
 
 
+
+
+// Quiz timer functions
+function startQuizTimer() {
+  stopQuizTimer();
+  QUIZ_TIMER.startTime = Date.now() - QUIZ_TIMER.elapsed;
+  QUIZ_TIMER.interval = setInterval(updateQuizTimer, 1000);
+  updateQuizTimer();
+}
+function stopQuizTimer() {
+  if (QUIZ_TIMER.interval) {
+    clearInterval(QUIZ_TIMER.interval);
+    QUIZ_TIMER.interval = null;
+  }
+}
+function resetQuizTimer() {
+  stopQuizTimer();
+  QUIZ_TIMER.elapsed = 0;
+  var el = document.getElementById('quiz-timer');
+  if (el) el.textContent = '⏱️ 00:00';
+}
+function updateQuizTimer() {
+  if (!QUIZ_TIMER.startTime) return;
+  QUIZ_TIMER.elapsed = Date.now() - QUIZ_TIMER.startTime;
+  var secs = Math.floor(QUIZ_TIMER.elapsed / 1000);
+  var mins = Math.floor(secs / 60);
+  var rem = secs % 60;
+  var text = (mins < 10 ? '0' : '') + mins + ':' + (rem < 10 ? '0' : '') + rem;
+  var el = document.getElementById('quiz-timer');
+  if (el) el.textContent = '⏱️ ' + text;
+}
+
+// Streak feedback functions
+function updateStreak(isCorrect) {
+  if (isCorrect) {
+    CURRENT_STREAK++;
+    if (CURRENT_STREAK > MAX_STREAK) MAX_STREAK = CURRENT_STREAK;
+    showStreakFeedback(CURRENT_STREAK);
+  } else {
+    CURRENT_STREAK = 0;
+  }
+}
+function showStreakFeedback(streak) {
+  if (streak < 3) return;
+  var container = document.getElementById('streak-feedback');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'streak-feedback';
+    var qa = document.getElementById('question-area');
+    if (qa && qa.parentNode) {
+      qa.parentNode.insertBefore(container, qa);
+    }
+  }
+  var cls = streak >= 10 ? 'streak-10' : (streak >= 5 ? 'streak-5' : 'streak-3');
+  var msg = streak >= 10 ? '🔥 連續答對 ' + streak + ' 題！太厲害了！' :
+            (streak >= 5 ? '⚡ 連續答對 ' + streak + ' 題！' :
+            '✨ 連續答對 ' + streak + ' 題！');
+  container.className = 'streak-feedback ' + cls;
+  container.textContent = msg;
+  container.style.display = 'inline-block';
+  setTimeout(function() {
+    if (container) container.style.display = 'none';
+  }, 2500);
+}
+function resetStreak() {
+  CURRENT_STREAK = 0;
+  var container = document.getElementById('streak-feedback');
+  if (container) container.style.display = 'none';
+}
+function formatTime(secs) {
+  var m = Math.floor(secs / 60);
+  var s = secs % 60;
+  return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
 function renderHome() {
 
   goScreen('home');
@@ -3016,13 +3097,10 @@ function proceedMode() {
         document.getElementById('nav-row').style.display = 'flex';
 
         document.getElementById('result-area').style.display = 'none';
-
+        resetQuizTimer(); resetStreak();
         goScreen('quiz-screen');
-
         renderQuestion();
-
       });
-
       return;
 
     }
@@ -3579,6 +3657,8 @@ function prevQ() {
 
 function showResult() {
 
+  stopQuizTimer();
+
   var total = STATE.questions.length;
 
   var correct = 0;
@@ -3620,6 +3700,8 @@ function showResult() {
     '<div class="result-score">'+pct+'%</div>' +
 
     '<div class="result-detail">答對 '+correct+' / '+total+' 題</div>' +
+    '<div style="font-size:.85rem;color:#7f8c8d;margin-top:4px">⏱️ 本次用時：'+formatTime(Math.floor(QUIZ_TIMER.elapsed/1000))+'</div>' +
+    (MAX_STREAK >= 3 ? '<div style="font-size:.85rem;color:#d35400;margin-top:4px">🔥 最高連續答對：'+MAX_STREAK+' 題</div>' : '') +
 
     (pct >= APP_CONFIG.PASSING_SCORE_EXCELLENT ? '\u003cdiv style="color:#27ae60;font-weight:600;margin-bottom:12px;"\u003e🎉 表現優秀！\u003c/div\u003e' : pct >= APP_CONFIG.PASSING_SCORE_GOOD ? '\u003cdiv style="color:#f39c12;font-weight:600;margin-bottom:12px;"\u003e👍 繼續加油\u003c/div\u003e' : '\u003cdiv style="color:#e74c3c;font-weight:600;margin-bottom:12px;"\u003e💪 需要再加強\u003c/div\u003e') +
 
@@ -4208,6 +4290,12 @@ if (document.readyState === 'loading') {
   init();
 
 }
+
+
+
+
+
+
 
 
 
