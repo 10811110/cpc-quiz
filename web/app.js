@@ -392,7 +392,8 @@ function toggleSettings() {
 
     document.getElementById('autoBackupToggle').checked = SETTINGS.autoBackup || false;
 
-    updateAutoBackupToggleStyle(SETTINGS.autoBackup || false);\r\n    
+    updateAutoBackupToggleStyle(SETTINGS.autoBackup || false);
+    
     document.getElementById('focusToggle').checked = SETTINGS.focusMode || false;
     updateFocusToggleStyle(SETTINGS.focusMode || false);
     document.getElementById('calmToggle').checked = SETTINGS.calmTheme || false;
