@@ -58,7 +58,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Microsoft Jheng
 /* Quiz */
 .question-counter{text-align:center;font-size:.88rem;color:#7f8c8d;margin-bottom:16px;font-weight:500}
 .quiz-card{background:white;border-radius:18px;padding:28px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 8px 20px rgba(0,0,0,.04)}
-.question-text{font-size:1.15rem;font-weight:600;color:#2c3e50;line-height:1.75;margin-bottom:24px;padding-bottom:16px;border-bottom:1.5px solid #f0f3f7}
+.question-text{display:flex;align-items:flex-start;justify-content:space-between;font-size:1.15rem;font-weight:600;color:#2c3e50;line-height:1.75;margin-bottom:24px;padding-bottom:16px;border-bottom:1.5px solid #f0f3f7}
 
 /* Options */
 .option-btn{width:100%;padding:16px 20px;border:2px solid #eef2f7;border-radius:14px;background:white;text-align:left;font-size:1rem;cursor:pointer;transition:all .18s;margin-bottom:14px;color:#2c3e50;font-weight:500;display:flex;align-items:center;gap:10px}
@@ -165,3 +165,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Microsoft Jheng
 .calm .streak-feedback.streak-5{background:#f0fdfa;color:#0f766e;border-color:#5eead4}
 .calm .streak-feedback.streak-10{background:#ccfbf1;color:#0f766e;border-color:#14b8a6;box-shadow:0 2px 8px rgba(13,148,136,.15)}
 
+
+/* 朗讀按鈕 */
+.speak-btn {
+  background: #f0f4f8;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+.speak-btn:hover {
+  background: #e1eaf3;
+  transform: scale(1.1);
+}
+.speak-btn.speaking {
+  background: #3498db;
+  color: white;
+}
+.speak-btn.speaking:hover {
+  background: #2980b9;
+}

@@ -2788,6 +2788,7 @@ function goScreen(id) {
   } else {
     document.body.classList.remove('quiz-focus');
     stopQuizTimer();
+    stopSpeaking();
   }
 
 }
@@ -3388,6 +3389,50 @@ function selectChapter(id) {
   }
 }
 
+var CURRENT_SPEECH = null;
+
+function stopSpeaking() {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  CURRENT_SPEECH = null;
+}
+
+function speakQuestion() {
+  if (!('speechSynthesis' in window)) { alert('您的瀏覽器不支援語音朗讀'); return; }
+  stopSpeaking();
+  var q = STATE.questions[STATE.current];
+  if (!q) return;
+  var text = '第' + (STATE.current + 1) + '題。' + q.question;
+  var opts = ['A','B','C','D'];
+  opts.forEach(function(o) {
+    if (q.options[o]) { text += '。選項 ' + o + '。' + q.options[o]; }
+  });
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-TW';
+  u.rate = 1;
+  u.pitch = 1;
+  u.onend = function() { CURRENT_SPEECH = null; updateSpeakBtn(); };
+  u.onerror = function() { CURRENT_SPEECH = null; updateSpeakBtn(); };
+  CURRENT_SPEECH = u;
+  window.speechSynthesis.speak(u);
+  updateSpeakBtn();
+}
+
+function updateSpeakBtn() {
+  var btn = document.getElementById('speak-btn');
+  if (!btn) return;
+  if (CURRENT_SPEECH) {
+    btn.innerHTML = '🔊';
+    btn.title = '停止朗讀';
+    btn.classList.add('speaking');
+  } else {
+    btn.innerHTML = '🔇';
+    btn.title = '朗讀題目';
+    btn.classList.remove('speaking');
+  }
+}
+
 
 function renderQuestion() {
 
@@ -3413,7 +3458,7 @@ function renderQuestion() {
 
 
 
-  var html = '<div class="question-text">'+escHtml(q.question)+'</div>';
+  var html = '<div class="question-text"><span style="flex:1">'+escHtml(q.question)+'</span><button id="speak-btn" class="speak-btn" onclick="speakQuestion()" title="朗讀題目">🔇</button></div>';
 
   
 
@@ -3472,6 +3517,7 @@ function renderQuestion() {
 
 
 function selectOption(opt) {
+  stopSpeaking();
 
   var q = STATE.questions[STATE.current];
 
@@ -3602,6 +3648,7 @@ function selectOption(opt) {
 
 
 function nextQ() {
+  stopSpeaking();
 
   // 小考/大考：未作答的題目不得跳過
 
@@ -3636,6 +3683,7 @@ function nextQ() {
 
 
 function prevQ() {
+  stopSpeaking();
 
   if (STATE.current > 0) {
 
@@ -3656,6 +3704,7 @@ function prevQ() {
 
 
 function showResult() {
+  stopSpeaking();
 
   stopQuizTimer();
 
@@ -3936,6 +3985,7 @@ function shuffleArray(arr) {
 
 
 function goHome() {
+  stopSpeaking();
 
   STATE = {screen:'home',mode:null,chId:null,questions:[],current:0,answers:[],done:false};
 
