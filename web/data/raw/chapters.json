@@ -1,0 +1,121 @@
+[
+  {
+    "id": 1,
+    "chapter": "第一章 企業經營風險與安全衛生",
+    "total_questions": 29,
+    "file": "chapter1.json",
+    "note": "不適用丙種"
+  },
+  {
+    "id": 2,
+    "chapter": "第二章 職業安全衛生相關法規",
+    "total_questions": 81,
+    "file": "chapter2.json",
+    "note": ""
+  },
+  {
+    "id": 3,
+    "chapter": "第三章 職業安全衛生概論",
+    "total_questions": 65,
+    "file": "chapter3.json",
+    "note": ""
+  },
+  {
+    "id": 4,
+    "chapter": "第四章 職業安全衛生管理系統",
+    "total_questions": 47,
+    "file": "chapter4.json",
+    "note": ""
+  },
+  {
+    "id": 5,
+    "chapter": "第五章 風險評估",
+    "total_questions": 34,
+    "file": "chapter5.json",
+    "note": ""
+  },
+  {
+    "id": 6,
+    "chapter": "第六章 承攬管理",
+    "total_questions": 30,
+    "file": "chapter6.json",
+    "note": ""
+  },
+  {
+    "id": 7,
+    "chapter": "第七章 採購及變更管理",
+    "total_questions": 39,
+    "file": "chapter7.json",
+    "note": ""
+  },
+  {
+    "id": 8,
+    "chapter": "第八章 緊急應變管理",
+    "total_questions": 31,
+    "file": "chapter8.json",
+    "note": ""
+  },
+  {
+    "id": 9,
+    "chapter": "第九章 墜落危害預防管理實務",
+    "total_questions": 34,
+    "file": "chapter9.json",
+    "note": ""
+  },
+  {
+    "id": 10,
+    "chapter": "第十章 機械安全管理實務",
+    "total_questions": 35,
+    "file": "chapter10.json",
+    "note": ""
+  },
+  {
+    "id": 11,
+    "chapter": "第十一章 火災爆炸危害預防管理實務",
+    "total_questions": 35,
+    "file": "chapter11.json",
+    "note": ""
+  },
+  {
+    "id": 12,
+    "chapter": "第十二章 感電危害預防管理實務",
+    "total_questions": 45,
+    "file": "chapter12.json",
+    "note": ""
+  },
+  {
+    "id": 13,
+    "chapter": "第十三章 倒塌崩塌危害預防管理實務",
+    "total_questions": 23,
+    "file": "chapter13.json",
+    "note": ""
+  },
+  {
+    "id": 14,
+    "chapter": "第十四章 化學性危害預防管理實務",
+    "total_questions": 70,
+    "file": "chapter14.json",
+    "note": ""
+  },
+  {
+    "id": 15,
+    "chapter": "第十五章 物理性危害預防管理實務",
+    "total_questions": 40,
+    "file": "chapter15.json",
+    "note": ""
+  },
+  {
+    "id": 16,
+    "chapter": "第十六章 職場健康管理實務",
+    "total_questions": 35,
+    "file": "chapter16.json",
+    "note": ""
+  },
+  {
+    "id": 17,
+    "chapter": "第十七章 職業災害調查處理與統計",
+    "total_questions": 52,
+    "file": "chapter17.json",
+    "note": ""
+  }
+]

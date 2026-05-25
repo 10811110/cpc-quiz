@@ -120,7 +120,7 @@ function selectSource(src) {
 
   } else if (src === 'jia') {
 
-    fetch('../data/raw/jia_data.json')
+    fetch('./data/raw/jia_data.json')
 
       .then(r => r.json())
 
@@ -153,7 +153,7 @@ function selectSource(src) {
 
     // 技術士題庫：動態載入章節索引
 
-    fetch('../data/raw/chapter_zhian_index.json')
+    fetch('./data/raw/chapter_zhian_index.json')
 
       .then(r => r.json())
 
@@ -185,7 +185,7 @@ function selectSource(src) {
 
   } else if (src === 'organic') {
 
-    fetch('../data/raw/organic_data.json')
+    fetch('./data/raw/organic_data.json')
 
       .then(r => r.json())
 
@@ -228,7 +228,7 @@ function selectSource(src) {
 
 function loadChaptersData() {
 
-  return fetch('../data/raw/chapters.json')
+  return fetch('./data/raw/chapters.json')
 
     .then(r => r.json())
 
@@ -2964,7 +2964,7 @@ function selectMode(mode) {
 
       // 如果還沒載入，從索引檔案載入
 
-      fetch('../data/raw/chapter_zhian_index.json')
+      fetch('./data/raw/chapter_zhian_index.json')
 
         .then(r => r.json())
 
@@ -3034,7 +3034,7 @@ function proceedMode() {
 
         promises.push(
 
-          fetch('../data/raw/' + chapterData.file)
+          fetch('./data/raw/' + chapterData.file)
 
             .then(r => r.json())
 
@@ -3138,7 +3138,7 @@ function proceedMode() {
 
         loadPromises.push(
 
-           loadChapterQuestions('../data/raw/' + ch.file).then(function(qs) {
+           loadChapterQuestions('./data/raw/' + ch.file).then(function(qs) {
 
             qs.forEach(function(q) { q._ch = k; });
 
@@ -3378,12 +3378,12 @@ function selectChapter(id) {
   } else if (src === 'organic' && window.ORGANIC_DATA[String(id)] && window.ORGANIC_DATA[String(id)].questions) {
     startQuestions(window.ORGANIC_DATA[String(id)].questions);
   } else if (src === 'zhian') {
-    loadChapterQuestions('../data/raw/' + chData.file).then(function(qs) {
+    loadChapterQuestions('./data/raw/' + chData.file).then(function(qs) {
       qs.forEach(function(q) { q._ch = id; });
       startQuestions(qs);
     });
   } else {
-    loadChapterQuestions('../data/raw/' + chData.file).then(function(qs) {
+    loadChapterQuestions('./data/raw/' + chData.file).then(function(qs) {
       startQuestions(qs);
     });
   }
