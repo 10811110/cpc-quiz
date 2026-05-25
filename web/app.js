@@ -2787,11 +2787,12 @@ function changeSpeakRate() {
   SETTINGS.speakRate = rate;
   saveSettings();
   if (valueEl) valueEl.textContent = rate.toFixed(1) + 'x';
-  // 如果正在朗讀，重新開始以套用新速度
-  if (SPEAKING_STATE === 'speaking' || SPEAKING_STATE === 'paused') {
-    stopSpeaking();
-    speakQuestion();
+  // 如果正在朗讀，取消當前片段並從同一片段重新開始（套用新速度）
+  if (SPEAKING_STATE === 'speaking') {
+    window.speechSynthesis.cancel();
+    speakNext();
   }
+  // 暫停狀態下只更新設定，繼續時自動套用新速度
 }
 
 
@@ -3413,48 +3414,82 @@ function selectChapter(id) {
 }
 
 var SPEAKING_STATE = 'idle'; // 'idle' | 'speaking' | 'paused'
+var SPEAK_QUEUE = []; // 当前题目的语音片段队列
+var SPEAK_INDEX = 0;  // 当前朗读到的片段索引
 
 function stopSpeaking() {
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
   SPEAKING_STATE = 'idle';
+  SPEAK_QUEUE = [];
+  SPEAK_INDEX = 0;
+}
+
+function buildSpeakQueue(q) {
+  var queue = [];
+  queue.push('第' + (STATE.current + 1) + '題。' + q.question);
+  var opts = ['A','B','C','D'];
+  opts.forEach(function(o) {
+    if (q.options[o]) {
+      queue.push('選項 ' + o + '。' + q.options[o]);
+    }
+  });
+  return queue;
+}
+
+function speakNext() {
+  if (SPEAKING_STATE !== 'speaking') return;
+  if (SPEAK_INDEX >= SPEAK_QUEUE.length) {
+    SPEAKING_STATE = 'idle';
+    updateSpeakBtn();
+    return;
+  }
+  var u = new SpeechSynthesisUtterance(SPEAK_QUEUE[SPEAK_INDEX]);
+  u.lang = 'zh-TW';
+  u.rate = SETTINGS.speakRate || 1;
+  u.pitch = 1;
+  u.onend = function() {
+    if (SPEAKING_STATE !== 'speaking') return;
+    SPEAK_INDEX++;
+    speakNext();
+  };
+  u.onerror = function() {
+    if (SPEAKING_STATE !== 'speaking') return;
+    SPEAK_INDEX++;
+    speakNext();
+  };
+  window.speechSynthesis.speak(u);
 }
 
 function speakQuestion() {
   if (!('speechSynthesis' in window)) { alert('您的瀏覽器不支援語音朗讀'); return; }
 
+  // 正在朗读中 -> 暂停
   if (SPEAKING_STATE === 'speaking') {
-    window.speechSynthesis.pause();
+    window.speechSynthesis.cancel();
     SPEAKING_STATE = 'paused';
     updateSpeakBtn();
     return;
   }
 
+  // 暂停中 -> 继续
   if (SPEAKING_STATE === 'paused') {
-    window.speechSynthesis.resume();
     SPEAKING_STATE = 'speaking';
     updateSpeakBtn();
+    speakNext();
     return;
   }
 
+  // 从头开始
   stopSpeaking();
   var q = STATE.questions[STATE.current];
   if (!q) return;
-  var text = '第' + (STATE.current + 1) + '題。' + q.question;
-  var opts = ['A','B','C','D'];
-  opts.forEach(function(o) {
-    if (q.options[o]) { text += '。選項 ' + o + '。' + q.options[o]; }
-  });
-  var u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-TW';
-  u.rate = SETTINGS.speakRate || 1;
-  u.pitch = 1;
-  u.onend = function() { SPEAKING_STATE = 'idle'; updateSpeakBtn(); };
-  u.onerror = function() { SPEAKING_STATE = 'idle'; updateSpeakBtn(); };
-  window.speechSynthesis.speak(u);
+  SPEAK_QUEUE = buildSpeakQueue(q);
+  SPEAK_INDEX = 0;
   SPEAKING_STATE = 'speaking';
   updateSpeakBtn();
+  speakNext();
 }
 
 function updateSpeakBtn() {
