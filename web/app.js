@@ -41,7 +41,7 @@ var EXAM_HISTORY = loadStorage('examHistory', {});
 
 var MISTAKE_BOOK = loadStorage('mistakeBook', {});
 
-var SETTINGS = loadStorage('settings', {"autoNext":false,"autoBackup":false,"autoBackupInterval":30,"focusMode":false,"calmTheme":false});
+var SETTINGS = loadStorage('settings', {"autoNext":false,"autoBackup":false,"autoBackupInterval":30,"focusMode":false,"calmTheme":false,"speakRate":1.0});
 
 var PROGRESS = loadStorage('progress', {});
 
@@ -417,6 +417,14 @@ function toggleSettings() {
       intervalRow.style.display = (SETTINGS.autoBackup || false) ? 'block' : 'none';
 
       intervalSelect.value = String(SETTINGS.autoBackupInterval || 30);
+
+    // 朗讀速度滑塊
+    var rateSlider = document.getElementById('speakRateSlider');
+    var rateValue = document.getElementById('speakRateValue');
+    if (rateSlider && rateValue) {
+      rateSlider.value = SETTINGS.speakRate || 1;
+      rateValue.textContent = (SETTINGS.speakRate || 1).toFixed(1) + 'x';
+    }
 
     }
 
@@ -2771,6 +2779,21 @@ function toggleAutoNext() {
 
 }
 
+function changeSpeakRate() {
+  var slider = document.getElementById('speakRateSlider');
+  var valueEl = document.getElementById('speakRateValue');
+  if (!slider) return;
+  var rate = parseFloat(slider.value);
+  SETTINGS.speakRate = rate;
+  saveSettings();
+  if (valueEl) valueEl.textContent = rate.toFixed(1) + 'x';
+  // 如果正在朗讀，重新開始以套用新速度
+  if (SPEAKING_STATE === 'speaking' || SPEAKING_STATE === 'paused') {
+    stopSpeaking();
+    speakQuestion();
+  }
+}
+
 
 
 function goScreen(id) {
@@ -3389,17 +3412,32 @@ function selectChapter(id) {
   }
 }
 
-var CURRENT_SPEECH = null;
+var SPEAKING_STATE = 'idle'; // 'idle' | 'speaking' | 'paused'
 
 function stopSpeaking() {
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
-  CURRENT_SPEECH = null;
+  SPEAKING_STATE = 'idle';
 }
 
 function speakQuestion() {
   if (!('speechSynthesis' in window)) { alert('您的瀏覽器不支援語音朗讀'); return; }
+
+  if (SPEAKING_STATE === 'speaking') {
+    window.speechSynthesis.pause();
+    SPEAKING_STATE = 'paused';
+    updateSpeakBtn();
+    return;
+  }
+
+  if (SPEAKING_STATE === 'paused') {
+    window.speechSynthesis.resume();
+    SPEAKING_STATE = 'speaking';
+    updateSpeakBtn();
+    return;
+  }
+
   stopSpeaking();
   var q = STATE.questions[STATE.current];
   if (!q) return;
@@ -3410,21 +3448,25 @@ function speakQuestion() {
   });
   var u = new SpeechSynthesisUtterance(text);
   u.lang = 'zh-TW';
-  u.rate = 1;
+  u.rate = SETTINGS.speakRate || 1;
   u.pitch = 1;
-  u.onend = function() { CURRENT_SPEECH = null; updateSpeakBtn(); };
-  u.onerror = function() { CURRENT_SPEECH = null; updateSpeakBtn(); };
-  CURRENT_SPEECH = u;
+  u.onend = function() { SPEAKING_STATE = 'idle'; updateSpeakBtn(); };
+  u.onerror = function() { SPEAKING_STATE = 'idle'; updateSpeakBtn(); };
   window.speechSynthesis.speak(u);
+  SPEAKING_STATE = 'speaking';
   updateSpeakBtn();
 }
 
 function updateSpeakBtn() {
   var btn = document.getElementById('speak-btn');
   if (!btn) return;
-  if (CURRENT_SPEECH) {
+  if (SPEAKING_STATE === 'speaking') {
     btn.innerHTML = '🔊';
-    btn.title = '停止朗讀';
+    btn.title = '暫停朗讀';
+    btn.classList.add('speaking');
+  } else if (SPEAKING_STATE === 'paused') {
+    btn.innerHTML = '⏸️';
+    btn.title = '繼續朗讀';
     btn.classList.add('speaking');
   } else {
     btn.innerHTML = '🔇';

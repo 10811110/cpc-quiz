@@ -193,3 +193,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Microsoft Jheng
 .speak-btn.speaking:hover {
   background: #2980b9;
 }
+
+/* 朗讀速度滑塊 */
+#speakRateSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: #ecf0f1;
+  border-radius: 3px;
+  outline: none;
+}
+#speakRateSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #3498db;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform .15s;
+}
+#speakRateSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+#speakRateSlider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #3498db;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
