@@ -32,3 +32,4 @@ organic_solvent.json
 node_modules/
 tests/screenshots/
 package-lock.json
+.env
